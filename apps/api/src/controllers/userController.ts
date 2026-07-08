@@ -42,8 +42,8 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
     });
 
     res.json({ success: true, data: user });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to sync user' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to sync user', error: error.message, stack: error.stack });
   }
 };
 
@@ -155,8 +155,8 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
       limit: Number(limit),
       hasMore: skip + users.length < total,
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Search failed' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Search failed', error: error.message, stack: error.stack });
   }
 };
 
@@ -234,8 +234,8 @@ export const getTrendingDevelopers = async (_req: AuthenticatedRequest, res: Res
       take: 10,
     });
     res.json({ success: true, data: users });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to get trending developers' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to get trending developers', error: error.message, stack: error.stack });
   }
 };
 

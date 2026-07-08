@@ -97,8 +97,8 @@ export const getFeed = async (req: AuthenticatedRequest, res: Response) => {
       limit: Number(limit),
       hasMore: skip + posts.length < total,
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch feed' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Failed to fetch feed', error: error.message, stack: error.stack });
   }
 };
 

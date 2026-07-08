@@ -19,7 +19,8 @@ export const errorHandler = (
   res.status(statusCode).json({
     success: false,
     message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    stack: err.stack,
+    details: err.toString(),
   });
 };
 
