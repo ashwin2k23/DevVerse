@@ -1,0 +1,31 @@
+import { Router } from 'express';
+import { requireAuth, optionalAuth } from '../middleware/auth';
+import {
+  getProfile,
+  updateProfile,
+  getFollowers,
+  getFollowing,
+  followUser,
+  unfollowUser,
+  searchUsers,
+  syncUser,
+  getTrendingDevelopers,
+  getSuggestedDevelopers,
+  getBookmarks,
+} from '../controllers/userController';
+
+const router: Router = Router();
+
+router.post('/sync', requireAuth, syncUser);
+router.get('/search', optionalAuth, searchUsers);
+router.get('/trending', optionalAuth, getTrendingDevelopers);
+router.get('/suggested', requireAuth, getSuggestedDevelopers);
+router.get('/me/bookmarks', requireAuth, getBookmarks);
+router.get('/:username', optionalAuth, getProfile);
+router.put('/me', requireAuth, updateProfile);
+router.get('/:username/followers', optionalAuth, getFollowers);
+router.get('/:username/following', optionalAuth, getFollowing);
+router.post('/:userId/follow', requireAuth, followUser);
+router.delete('/:userId/follow', requireAuth, unfollowUser);
+
+export default router;

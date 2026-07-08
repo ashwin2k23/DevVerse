@@ -1,0 +1,147 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Heart, MessageSquare, UserPlus, Star, Award, Trash2, Check, Bell, Loader2 } from "lucide-react";
+import { formatRelativeTime } from "@/lib/utils";
+import { useApiClient } from "@/lib/api";
+
+const iconMap: Record<string, any> = {
+  LIKE: { icon: Heart, color: "#EF4444", bg: "rgba(239,68,68,0.1)" },
+  FOLLOW: { icon: UserPlus, color: "#2563EB", bg: "rgba(37,99,235,0.1)" },
+  COMMENT: { icon: MessageSquare, color: "#10B981", bg: "rgba(16,185,129,0.1)" },
+  PROJECT_APPRECIATION: { icon: Star, color: "#F59E0B", bg: "rgba(245,158,11,0.1)" },
+  ACHIEVEMENT: { icon: Award, color: "#7C3AED", bg: "rgba(124,58,237,0.1)" },
+};
+
+export default function NotificationsPage() {
+  const authApi = useApiClient();
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await authApi.get("/notifications");
+      if (res.data?.success) {
+        setNotifications(res.data.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const markAllRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date() })));
+    try {
+      await authApi.put("/notifications/read-all");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await authApi.delete(`/notifications/${id}`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.readAt).length;
+
+  return (
+    <div style={{ paddingTop: 24 }}>
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}
+      >
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em" }}>Notifications</h1>
+          <p style={{ color: "var(--secondary)", fontSize: 14, marginTop: 4 }}>
+            You have <strong style={{ color: "var(--accent)" }}>{unreadCount}</strong> unread notifications
+          </p>
+        </div>
+
+        {unreadCount > 0 && (
+          <button
+            id="mark-all-read-btn"
+            onClick={markAllRead}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-full)", fontSize: 13, fontWeight: 500, cursor: "pointer", color: "var(--secondary)" }}
+          >
+            <Check size={14} />
+            Mark all read
+          </button>
+        )}
+      </motion.div>
+
+      {/* Notifications List */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {loading ? (
+          <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
+            <Loader2 size={32} className="animate-spin" style={{ color: "var(--accent)" }} />
+          </div>
+        ) : notifications.length === 0 ? (
+          <div style={{ padding: 48, textAlign: "center", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
+            <Bell size={32} style={{ color: "var(--muted)", margin: "0 auto 12px" }} />
+            <p style={{ fontSize: 15, fontWeight: 600 }}>All caught up!</p>
+            <p style={{ fontSize: 13, color: "var(--secondary)", marginTop: 4 }}>No notifications found.</p>
+          </div>
+        ) : (
+          notifications.map((notif, i) => {
+            const iconData = iconMap[notif.type] || { icon: Bell, color: "var(--muted)", bg: "var(--surface-elevated)" };
+            const Icon = iconData.icon;
+
+            return (
+              <motion.div
+                key={notif.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i * 0.05, 0.3) }}
+                style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 20px", background: notif.readAt ? "var(--surface)" : "var(--accent-muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", position: "relative", transition: "background 150ms" }}
+              >
+                {/* Icon box */}
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: iconData.bg, display: "flex", alignItems: "center", justifyCenter: "center", flexShrink: 0, justifyContent: "center" }}>
+                  <Icon size={16} style={{ color: iconData.color }} />
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13.5, lineHeight: 1.5 }}>
+                    {notif.fromUser ? (
+                      <>
+                        <strong style={{ fontWeight: 600 }}>{notif.fromUser.username}</strong>{" "}
+                        <span style={{ color: "var(--secondary)" }}>@{notif.fromUser.username}</span>{" "}
+                      </>
+                    ) : null}
+                    {notif.message}
+                  </p>
+                  <span style={{ fontSize: 11, color: "var(--muted)", marginTop: 6, display: "block" }}>
+                    {formatRelativeTime(new Date(notif.createdAt))}
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <button
+                  id={`delete-notif-${notif.id}`}
+                  onClick={() => deleteNotification(notif.id)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4, borderRadius: 6, alignSelf: "center", transition: "color 150ms" }}
+                  className="hover:text-danger"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}

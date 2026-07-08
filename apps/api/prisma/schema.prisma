@@ -1,0 +1,383 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+
+// ─── Models ─────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  username  String   @unique
+  email     String   @unique
+  avatarUrl String?
+  coverUrl  String?
+  bio       String?
+  role      String   @default("USER")
+  level     Int      @default(1)
+  streak    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  profile           Profile?
+  projects          Project[]
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  bookmarks         Bookmark[]
+  socialLinks       SocialLink[]
+  userSkills        UserSkill[]
+  experience        Experience[]
+  education         Education[]
+  achievements      Achievement[]
+  followers         Follower[]          @relation("following")
+  following         Follower[]          @relation("follower")
+  communities       CommunityMember[]
+  createdCommunities Community[]
+  eventRegistrations EventRegistration[]
+  sentMessages      Message[]
+  conversations     ConversationParticipant[]
+  notifications     Notification[]
+  notificationFrom  Notification[]      @relation("notificationFrom")
+
+  @@map("users")
+}
+
+model Profile {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  headline      String?
+  location      String?
+  website       String?
+  resumeUrl     String?
+  completionPct Int     @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model SocialLink {
+  id       String @id @default(cuid())
+  userId   String
+  platform String
+  url      String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("social_links")
+}
+
+model Experience {
+  id          String    @id @default(cuid())
+  userId      String
+  company     String
+  role        String
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  description String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("experience")
+}
+
+model Education {
+  id          String @id @default(cuid())
+  userId      String
+  institution String
+  degree      String
+  field       String
+  startYear   Int
+  endYear     Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("education")
+}
+
+model Skill {
+  id         String      @id @default(cuid())
+  name       String      @unique
+  category   String
+  userSkills UserSkill[]
+
+  @@map("skills")
+}
+
+model UserSkill {
+  id          String @id @default(cuid())
+  userId      String
+  skillId     String
+  proficiency String @default("BEGINNER")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@map("user_skills")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String
+  icon        String
+  earnedAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("achievements")
+}
+
+model Follower {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("followers")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String
+  techStack   String   @default("") // Comma-separated in SQLite
+  githubUrl   String?
+  demoUrl     String?
+  bannerUrl   String?
+  tags        String   @default("") // Comma-separated in SQLite
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images   ProjectImage[]
+  likes    Like[]
+  comments Comment[]
+  bookmarks Bookmark[]
+
+  @@map("projects")
+}
+
+model ProjectImage {
+  id        String @id @default(cuid())
+  projectId String
+  url       String
+  order     Int    @default(0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_images")
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  userId      String
+  content     String
+  type        String   @default("TEXT")
+  imageUrls   String   @default("") // Comma-separated in SQLite
+  communityId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community? @relation(fields: [communityId], references: [id])
+  comments  Comment[]
+  likes     Like[]
+  bookmarks Bookmark[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String?
+  projectId String?
+  userId    String
+  content   String
+  parentId  String?
+  createdAt DateTime @default(now())
+
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  project Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("replies", fields: [parentId], references: [id])
+  replies Comment[] @relation("replies")
+  likes   Like[]
+
+  @@map("comments")
+}
+
+model Like {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String
+  postId     String?
+  projectId  String?
+  commentId  String?
+  createdAt  DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@map("likes")
+}
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String
+  postId     String?
+  projectId  String?
+  eventId    String?
+  createdAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("bookmarks")
+}
+
+model Community {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  avatarUrl   String?
+  isPrivate   Boolean  @default(false)
+  creatorId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator  User              @relation(fields: [creatorId], references: [id])
+  members  CommunityMember[]
+  posts    Post[]
+  events   Event[]
+
+  @@map("communities")
+}
+
+model CommunityMember {
+  id          String   @id @default(cuid())
+  communityId String
+  userId      String
+  role        String   @default("MEMBER")
+  joinedAt    DateTime @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@map("community_members")
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  type        String
+  startAt     DateTime
+  endAt       DateTime
+  bannerUrl   String?
+  location    String?
+  isOnline    Boolean   @default(true)
+  communityId String?
+  createdAt   DateTime  @default(now())
+
+  community     Community?          @relation(fields: [communityId], references: [id])
+  registrations EventRegistration[]
+  bookmarks     Bookmark[]
+
+  @@map("events")
+}
+
+model EventRegistration {
+  id           String   @id @default(cuid())
+  eventId      String
+  userId       String
+  registeredAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("event_registrations")
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  isGroup   Boolean  @default(false)
+  name      String?
+  createdAt DateTime @default(now())
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String @id @default(cuid())
+  conversationId String
+  userId         String
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  type           String    @default("TEXT")
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String
+  type       String
+  fromUserId String?
+  targetId   String?
+  targetType String?
+  message    String
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromUser User? @relation("notificationFrom", fields: [fromUserId], references: [id])
+
+  @@map("notifications")
+}
