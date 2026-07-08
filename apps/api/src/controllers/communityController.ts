@@ -25,12 +25,16 @@ const communityInclude = {
 export const getCommunities = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { q } = req.query;
+    const queryStr = q ? String(q) : '';
     const communities = await prisma.community.findMany({
       where: {
         ...(q && {
           OR: [
-            { name: { contains: String(q) } },
-            { description: { contains: String(q) } },
+            { name: { contains: queryStr } },
+            { name: { contains: queryStr.toLowerCase() } },
+            { name: { contains: queryStr.toUpperCase() } },
+            { description: { contains: queryStr } },
+            { description: { contains: queryStr.toLowerCase() } },
           ],
         }),
       },

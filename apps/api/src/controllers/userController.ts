@@ -128,12 +128,16 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
     const { q, skills, country, page = 1, limit = 12 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
+    const queryStr = String(q);
     const users = await prisma.user.findMany({
       where: {
         ...(q && {
           OR: [
-            { username: { contains: String(q) } },
-            { bio: { contains: String(q) } },
+            { username: { contains: queryStr } },
+            { username: { contains: queryStr.toLowerCase() } },
+            { username: { contains: queryStr.toUpperCase() } },
+            { bio: { contains: queryStr } },
+            { bio: { contains: queryStr.toLowerCase() } },
           ],
         }),
       },

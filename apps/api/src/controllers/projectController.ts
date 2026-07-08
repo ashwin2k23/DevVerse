@@ -40,13 +40,17 @@ export const getProjects = async (req: AuthenticatedRequest, res: Response) => {
       orderBy = { createdAt: 'desc' }; // fallback for views
     }
 
+    const queryStr = q ? String(q) : '';
     const projects = await prisma.project.findMany({
       where: {
         AND: [
           q ? {
             OR: [
-              { title: { contains: String(q) } },
-              { description: { contains: String(q) } },
+              { title: { contains: queryStr } },
+              { title: { contains: queryStr.toLowerCase() } },
+              { title: { contains: queryStr.toUpperCase() } },
+              { description: { contains: queryStr } },
+              { description: { contains: queryStr.toLowerCase() } },
             ]
           } : {},
           tech ? {
@@ -65,8 +69,11 @@ export const getProjects = async (req: AuthenticatedRequest, res: Response) => {
         AND: [
           q ? {
             OR: [
-              { title: { contains: String(q) } },
-              { description: { contains: String(q) } },
+              { title: { contains: queryStr } },
+              { title: { contains: queryStr.toLowerCase() } },
+              { title: { contains: queryStr.toUpperCase() } },
+              { description: { contains: queryStr } },
+              { description: { contains: queryStr.toLowerCase() } },
             ]
           } : {},
           tech ? {
