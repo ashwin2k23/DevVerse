@@ -5,8 +5,8 @@ import { PrismaClient } from '@prisma/client';
  *  - Production (Railway): Turso libSQL via TURSO_DATABASE_URL + TURSO_AUTH_TOKEN
  *  - Development (local):  SQLite via DATABASE_URL=file:./dev.db
  *
- * Uses synchronous require() so the singleton is ready immediately at module load,
- * allowing all controllers to import it directly without async/await.
+ * @prisma/adapter-libsql@6.19.3 uses a Factory pattern — it expects
+ * a plain config object { url, authToken }, NOT a pre-created @libsql/client instance.
  */
 function createPrisma(): PrismaClient {
   const tursoUrl = process.env.TURSO_DATABASE_URL;
@@ -14,12 +14,9 @@ function createPrisma(): PrismaClient {
 
   if (tursoUrl && tursoToken) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createClient } = require('@libsql/client');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaLibSQL } = require('@prisma/adapter-libsql');
-
-    const libsql = createClient({ url: tursoUrl, authToken: tursoToken });
-    const adapter = new PrismaLibSQL(libsql);
+    // Pass config object directly — adapter creates the @libsql/client internally
+    const adapter = new PrismaLibSQL({ url: tursoUrl, authToken: tursoToken });
     return new PrismaClient({ adapter } as any);
   }
 
