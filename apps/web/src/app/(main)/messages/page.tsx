@@ -154,7 +154,10 @@ export default function MessagesPage() {
 
     const handleNewMessage = (msg: Message) => {
       if (msg.conversationId === activeConvId) {
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
       }
       setConversations((prev) => prev.map((c) => c.id === msg.conversationId ? { ...c, messages: [msg] } : c));
     };
