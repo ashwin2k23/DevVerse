@@ -136,15 +136,19 @@ function PostComposer({ onPost }: { onPost: (post: Post) => void }) {
   const [content, setContent] = useState("");
   const [postType, setPostType] = useState<"TEXT" | "CODE">("TEXT");
   const [loading, setLoading] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!content.trim() || loading) return;
     setLoading(true);
+    setPostError(null);
     try {
       const res = await authApi.post("/feed", { content, type: postType });
       onPost(res.data.data);
       setContent("");
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Failed to post. Please try again.";
+      setPostError(msg);
       console.error("Failed to post:", err);
     } finally {
       setLoading(false);
@@ -153,6 +157,11 @@ function PostComposer({ onPost }: { onPost: (post: Post) => void }) {
 
   return (
     <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "16px 20px", marginBottom: 20 }}>
+      {postError && (
+        <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)", padding: "8px 12px", marginBottom: 12, fontSize: 13, color: "#ef4444", display: "flex", alignItems: "center", gap: 8 }}>
+          ⚠️ {postError}
+        </div>
+      )}
       <div style={{ display: "flex", gap: 12 }}>
         <Avatar username={user?.username || user?.id || "me"} avatarUrl={user?.imageUrl} size={38} />
         <div style={{ flex: 1 }}>

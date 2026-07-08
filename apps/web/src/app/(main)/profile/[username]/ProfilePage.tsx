@@ -81,12 +81,14 @@ export default function ProfilePage({ username }: ProfilePageProps) {
           setProfile(res.data.data);
           setIsFollowing(!!res.data.data.isFollowing);
         } else {
-          setError("User not found");
+          setError("not_found");
         }
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.error("Profile load error:", err);
-        setError("User not found");
+        // Network error (API unreachable) vs 404 (user doesn't exist)
+        const status = err?.response?.status;
+        setError(status === 404 ? "not_found" : "api_error");
       })
       .finally(() => {
         setLoading(false);
@@ -149,11 +151,31 @@ export default function ProfilePage({ username }: ProfilePageProps) {
   }
 
   if (error || !profile) {
+    const isApiError = error === "api_error";
     return (
       <div style={{ textAlign: "center", padding: "80px 20px" }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, color: "var(--primary)" }}>Profile Not Found</h2>
-        <p style={{ color: "var(--secondary)", marginBottom: 16 }}>The developer page you are looking for does not exist.</p>
-        <Link href="/dashboard" style={{ color: "var(--accent)", fontWeight: 600 }}>Back to Dashboard</Link>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>{isApiError ? "🔌" : "👤"}</div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, color: "var(--primary)" }}>
+          {isApiError ? "Cannot reach the server" : "Profile Not Found"}
+        </h2>
+        <p style={{ color: "var(--secondary)", marginBottom: 8, maxWidth: 380, margin: "0 auto 16px" }}>
+          {isApiError
+            ? "The API is temporarily unavailable. Please wait a moment and try again."
+            : `No developer with username "${username}" exists yet. They may need to log in to create their profile.`
+          }
+        </p>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+          <button
+            onClick={() => { setError(null); setLoading(true); authApi.get(`/users/${username}`).then(r => { if (r.data?.success) setProfile(r.data.data); else setError("not_found"); }).catch(() => setError("api_error")).finally(() => setLoading(false)); }}
+            style={{ padding: "8px 20px", borderRadius: "var(--radius-full)", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--primary)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          >
+            🔄 Retry
+          </button>
+          <Link href="/explore" style={{ padding: "8px 20px", borderRadius: "var(--radius-full)", border: "none", background: "var(--accent)", color: "white", fontSize: 13, fontWeight: 600, textDecoration: "none", display: "inline-block" }}>
+            Search Developers
+          </Link>
+          <Link href="/dashboard" style={{ color: "var(--accent)", fontWeight: 600, display: "inline-flex", alignItems: "center", padding: "8px 4px", fontSize: 13 }}>Back to Dashboard</Link>
+        </div>
       </div>
     );
   }
