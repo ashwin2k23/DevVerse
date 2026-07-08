@@ -45,12 +45,12 @@ export const getProjects = async (req: AuthenticatedRequest, res: Response) => {
         AND: [
           q ? {
             OR: [
-              { title: { contains: String(q), mode: 'insensitive' } },
-              { description: { contains: String(q), mode: 'insensitive' } },
+              { title: { contains: String(q) } },
+              { description: { contains: String(q) } },
             ]
           } : {},
           tech ? {
-            techStack: { hasSome: String(tech).split(',') }
+            techStack: { contains: String(tech).split(',')[0] }
           } : {},
         ]
       },
@@ -65,12 +65,12 @@ export const getProjects = async (req: AuthenticatedRequest, res: Response) => {
         AND: [
           q ? {
             OR: [
-              { title: { contains: String(q), mode: 'insensitive' } },
-              { description: { contains: String(q), mode: 'insensitive' } },
+              { title: { contains: String(q) } },
+              { description: { contains: String(q) } },
             ]
           } : {},
           tech ? {
-            techStack: { hasSome: String(tech).split(',') }
+            techStack: { contains: String(tech).split(',')[0] }
           } : {},
         ]
       }

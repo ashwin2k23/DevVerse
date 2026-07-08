@@ -18,15 +18,14 @@ async function createPrismaClient(): Promise<PrismaClient> {
 
   if (tursoUrl && tursoToken) {
     // Production: use Turso libSQL adapter
-    const { createClient } = await import('@libsql/client');
+    // PrismaLibSQL accepts a config object { url, authToken }, NOT a client instance
     const { PrismaLibSQL } = await import('@prisma/adapter-libsql');
 
-    const libsql = createClient({
+    const adapter = new PrismaLibSQL({
       url: tursoUrl,
       authToken: tursoToken,
     });
 
-    const adapter = new PrismaLibSQL(libsql);
     return new PrismaClient({ adapter } as any);
   }
 
@@ -41,19 +40,16 @@ if (process.env.NODE_ENV === 'production') {
   prismaPromise = createPrismaClient();
 } else {
   if (!global.__prisma) {
-    // In dev, store a sync instance (no Turso in dev)
     global.__prisma = new PrismaClient();
   }
   prismaPromise = Promise.resolve(global.__prisma);
 }
 
-// Export a lazy getter so controllers can do: const prisma = await getPrisma()
 export async function getPrisma(): Promise<PrismaClient> {
   return prismaPromise;
 }
 
-// For backward compat — synchronous export (works fine in dev/SQLite)
-// In production with Turso this will still work because the adapter is initialized once at startup
-export const prisma = new PrismaClient();
+// Synchronous singleton — always valid for dev and production startup
+export const prisma = global.__prisma ?? new PrismaClient();
 
 export default prisma;

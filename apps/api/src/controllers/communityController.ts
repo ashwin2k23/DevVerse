@@ -29,8 +29,8 @@ export const getCommunities = async (req: AuthenticatedRequest, res: Response) =
       where: {
         ...(q && {
           OR: [
-            { name: { contains: String(q), mode: 'insensitive' } },
-            { description: { contains: String(q), mode: 'insensitive' } },
+            { name: { contains: String(q) } },
+            { description: { contains: String(q) } },
           ],
         }),
       },
@@ -65,7 +65,7 @@ export const createCommunity = async (req: AuthenticatedRequest, res: Response) 
         members: {
           create: {
             userId: user.id,
-            role: CommunityRole.ADMIN,
+            role: 'ADMIN',
           },
         },
       },
@@ -119,7 +119,7 @@ export const updateCommunity = async (req: AuthenticatedRequest, res: Response) 
       where: { communityId_userId: { communityId, userId: user.id } },
     });
 
-    if (!membership || (membership.role !== CommunityRole.ADMIN && membership.role !== CommunityRole.MODERATOR)) {
+    if (!membership || (membership.role !== 'ADMIN' && membership.role !== 'MODERATOR')) {
       throw createError('Unauthorized', 403);
     }
 

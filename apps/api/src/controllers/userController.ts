@@ -132,8 +132,8 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
       where: {
         ...(q && {
           OR: [
-            { username: { contains: String(q), mode: 'insensitive' } },
-            { bio: { contains: String(q), mode: 'insensitive' } },
+            { username: { contains: String(q) } },
+            { bio: { contains: String(q) } },
           ],
         }),
       },
