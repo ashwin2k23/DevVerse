@@ -1,10 +1,8 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
 import { slugify } from '../utils/slugify';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 const communityInclude = {
   creator: {

@@ -1,7 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 // Track online users: { clerkId -> socketId }
 const onlineUsers = new Map<string, string>();

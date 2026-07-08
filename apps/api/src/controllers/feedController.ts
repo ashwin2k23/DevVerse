@@ -1,12 +1,11 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
+import { prisma } from '../lib/prisma';
 
 // SQLite: enums are plain strings
 const TARGET_POST = 'POST';
 
-const prisma = new PrismaClient();
 
 const postInclude = {
   user: {

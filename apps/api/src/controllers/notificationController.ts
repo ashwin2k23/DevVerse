@@ -1,9 +1,8 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
+import { prisma } from '../lib/prisma';
 
-const prisma = new PrismaClient();
 
 export const getNotifications = async (req: AuthenticatedRequest, res: Response) => {
   try {

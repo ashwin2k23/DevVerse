@@ -1,9 +1,7 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 const projectInclude = {
   user: {
