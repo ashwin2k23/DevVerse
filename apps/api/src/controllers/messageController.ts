@@ -213,3 +213,27 @@ export const markAsRead = async (req: AuthenticatedRequest, res: Response) => {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 };
+
+export const getUnreadCount = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
+    if (!user) throw createError('User not found', 404);
+
+    const count = await prisma.message.count({
+      where: {
+        conversation: {
+          participants: {
+            some: { userId: user.id }
+          }
+        },
+        senderId: { not: user.id },
+        readAt: null,
+      }
+    });
+
+    res.json({ success: true, data: { count } });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+};
+

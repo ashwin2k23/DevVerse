@@ -6,6 +6,7 @@ import communityRoutes from './communities';
 import eventRoutes from './events';
 import messageRoutes from './messages';
 import notificationRoutes from './notifications';
+import statsRoutes from './stats';
 import { requireAuth } from '../middleware/auth';
 import { upload } from '../middleware/upload';
 import { uploadFile } from '../controllers/uploadController';
@@ -19,6 +20,7 @@ router.use('/communities', communityRoutes);
 router.use('/events', eventRoutes);
 router.use('/messages', messageRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/stats', statsRoutes);
 
 // ─── File Upload ─────────────────────────────────────────────────────────────
 router.post('/upload', requireAuth, upload.single('file'), uploadFile);
