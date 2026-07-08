@@ -109,7 +109,7 @@ export default function NotificationsPage() {
                 style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 20px", background: notif.readAt ? "var(--surface)" : "var(--accent-muted)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", position: "relative", transition: "background 150ms" }}
               >
                 {/* Icon box */}
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: iconData.bg, display: "flex", alignItems: "center", justifyCenter: "center", flexShrink: 0, justifyContent: "center" }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: iconData.bg, display: "flex", alignItems: "center", flexShrink: 0, justifyContent: "center" }}>
                   <Icon size={16} style={{ color: iconData.color }} />
                 </div>
 

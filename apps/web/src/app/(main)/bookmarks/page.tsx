@@ -106,7 +106,7 @@ export default function BookmarksPage() {
                     const color = colors[i % colors.length];
                     return (
                       <div key={project.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                        <div style={{ height: 100, display: "flex", alignItems: "center", justifyCenter: "center", fontSize: 28, fontWeight: 800, color: "rgba(255,255,255,0.3)", justifyContent: "center" }} className={`bg-gradient-to-br ${color}`}>
+                        <div style={{ height: 100, display: "flex", alignItems: "center", fontSize: 28, fontWeight: 800, color: "rgba(255,255,255,0.3)", justifyContent: "center" }} className={`bg-gradient-to-br ${color}`}>
                           {project.title.slice(0, 2).toUpperCase()}
                         </div>
                         <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column" }}>
@@ -181,7 +181,7 @@ export default function BookmarksPage() {
                     const color = colors[i % colors.length];
                     return (
                       <div key={event.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
-                        <div style={{ height: 90, display: "flex", alignItems: "center", justifyCenter: "center", fontSize: 24, fontWeight: 800, color: "rgba(255,255,255,0.3)", justifyContent: "center" }} className={`bg-gradient-to-br ${color}`}>
+                        <div style={{ height: 90, display: "flex", alignItems: "center", fontSize: 24, fontWeight: 800, color: "rgba(255,255,255,0.3)", justifyContent: "center" }} className={`bg-gradient-to-br ${color}`}>
                           {event.title.slice(0, 2).toUpperCase()}
                         </div>
                         <div style={{ padding: 14 }}>

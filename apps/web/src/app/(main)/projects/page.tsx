@@ -138,7 +138,7 @@ export default function ProjectsPage() {
               >
                 {/* Banner */}
                 <div
-                  style={{ height: 120, display: "flex", alignItems: "center", justifyCenter: "center", fontSize: 36, fontWeight: 800, color: "rgba(255,255,255,0.3)", position: "relative", letterSpacing: "-0.02em", flexShrink: 0, justifyContent: "center" }}
+                  style={{ height: 120, display: "flex", alignItems: "center", fontSize: 36, fontWeight: 800, color: "rgba(255,255,255,0.3)", position: "relative", letterSpacing: "-0.02em", flexShrink: 0, justifyContent: "center" }}
                   className={`bg-gradient-to-br ${color}`}
                 >
                   {project.title.slice(0, 2).toUpperCase()}
