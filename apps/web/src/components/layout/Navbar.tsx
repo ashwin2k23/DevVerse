@@ -12,7 +12,6 @@ import {
   Bell,
   Sun,
   Moon,
-  Command,
   X,
   Settings,
 } from "lucide-react";
@@ -160,20 +159,6 @@ export default function Navbar() {
           >
             <Search size={14} />
             <span style={{ flex: 1, textAlign: "left" }}>Search developers, projects...</span>
-            <kbd
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                background: "var(--border)",
-                borderRadius: 4,
-                padding: "2px 6px",
-                fontSize: 11,
-                fontFamily: "monospace",
-              }}
-            >
-              <Command size={10} />K
-            </kbd>
           </button>
 
           {/* Right actions */}

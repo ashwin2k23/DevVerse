@@ -23,14 +23,33 @@ const duckResponses = [
   "🐤 Quack! If it compiled on the first try, something is wrong.",
 ];
 
-const terminalCommands: Record<string, string> = {
-  help: "Available commands: help, joke, hack, git-push, clear, coffee, whoami",
-  whoami: "You are an elite developer. The compiler fears you.",
-  joke: "Why do programmers wear glasses? Because they can't C#.",
-  hack: "⚡ Accessing mainframe... ⚡ Access Granted! (Just kidding, it's a mock console!)",
-  "git-push": "🚀 Pushing changes... force pushing to main... done! (Please don't do this in real projects!)",
-  coffee: "☕ Refilled! Fuel status is at 100%.",
-  clear: "clear",
+const terminalCommands: Record<string, (args: string) => string> = {
+  help: () => "Available commands:\n  help, whoami, ls, pwd, echo <text>, date, clear\n  node -v, npm -v, git log, git status, ping\n  coffee, joke, hack, matrix, fortune, uptime",
+  whoami: () => "You are an elite developer. The compiler fears you.",
+  ls: () => "📁 src/  📁 components/  📁 public/  📁 node_modules/\n📄 package.json  📄 tsconfig.json  📄 README.md",
+  pwd: () => "/home/devverse/workspace",
+  date: () => new Date().toString(),
+  "node -v": () => "v22.19.0",
+  "node --version": () => "v22.19.0",
+  "npm -v": () => "10.9.2",
+  "npm --version": () => "10.9.2",
+  "git log": () => "commit a1b2c3d (HEAD -> main)\nAuthor: You <you@devverse.dev>\nDate:   " + new Date().toDateString() + "\n\n    feat: implement something awesome",
+  "git status": () => "On branch main\nYour branch is up to date with 'origin/main'.\nnothing to commit, working tree clean",
+  ping: () => "PING devverse.dev (127.0.0.1): 56 bytes of data\n64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.042ms\n--- devverse.dev ping statistics ---\n1 packets transmitted, 1 received, 0% packet loss",
+  joke: () => "Why do programmers wear glasses? Because they can't C#.",
+  hack: () => "⚡ Initiating breach sequence...\n[██████████] 100% — Access Granted.\n(It's just a mock console, don't worry!)",
+  "git-push": () => "🚀 Pushing to origin/main...\nTo https://github.com/devverse/app.git\n   a1b2c3d..f4e5d6c  main -> main",
+  coffee: () => "☕ Refilled! Fuel status is at 100%.",
+  matrix: () => "Wake up, Neo...\nThe Matrix has you.\nFollow the white rabbit. 🐇",
+  fortune: () => [
+    "\"The best code is no code at all.\"",
+    "\"First, solve the problem. Then, write the code.\"",
+    "\"Any fool can write code that a computer can understand. Good programmers write code that humans can understand.\"",
+    "\"Programs must be written for people to read.\"",
+    "\"Talk is cheap. Show me the code.\"",
+  ][Math.floor(Math.random() * 5)],
+  uptime: () => `System uptime: ${Math.floor(Math.random() * 24)}h ${Math.floor(Math.random() * 60)}m — All systems operational.`,
+  clear: () => "clear",
 };
 
 export default function DevPlayground() {
@@ -65,15 +84,26 @@ export default function DevPlayground() {
 
   const handleTerminalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cmd = terminalInput.trim().toLowerCase();
-    if (!cmd) return;
+    const raw = terminalInput.trim();
+    if (!raw) return;
+    const cmd = raw.toLowerCase();
+    const args = raw.slice(raw.indexOf(" ") + 1);
 
-    const output = terminalCommands[cmd] || `Command not found: ${cmd}. Type 'help' for suggestions.`;
+    let output: string;
+    if (cmd.startsWith("echo ")) {
+      output = args;
+    } else if (terminalCommands[cmd]) {
+      output = terminalCommands[cmd](args);
+    } else {
+      output = `Command not found: ${raw}\nType 'help' to see available commands.`;
+    }
 
     if (output === "clear") {
       setTerminalLogs([]);
     } else {
-      setTerminalLogs((prev) => [...prev, `> ${terminalInput}`, output]);
+      // Support multi-line outputs — split on \n
+      const lines = output.split("\n");
+      setTerminalLogs((prev) => [...prev, `> ${raw}`, ...lines]);
     }
 
     if (cmd === "coffee") {

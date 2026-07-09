@@ -351,6 +351,22 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [platformStats, setPlatformStats] = useState({ members: 0, posts: 0 });
+
+  // Fetch live platform stats for About Community widget
+  useEffect(() => {
+    // /api/stats returns { developers, projects, communities, events }
+    authApi.get("/stats").then((res) => {
+      if (res.data?.developers !== undefined) {
+        setPlatformStats({ members: res.data.developers, posts: res.data.projects || 0 });
+      }
+    }).catch(() => {});
+    // Also count posts from the feed
+    authApi.get("/feed?page=1&limit=1").then((res) => {
+      const total = res.data?.total;
+      if (total) setPlatformStats((prev) => ({ ...prev, posts: total }));
+    }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPosts = useCallback(async (p = 1) => {
     try {
@@ -414,16 +430,20 @@ export default function FeedPage() {
               About Community
             </h2>
             <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--primary)" }}>
-              Welcome to <strong>r/DevVerse</strong>! A neobrutalist space for developers to sync code, showcase products, and check in on streaks.
+              <strong>DevVerse</strong> — a developer-first community to sync code, showcase projects, share knowledge, and connect with builders worldwide.
             </p>
             <div style={{ display: "flex", gap: 24, marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border-subtle)" }}>
               <div>
-                <p style={{ fontSize: 15, fontWeight: 700 }}>14.2k</p>
+                <p style={{ fontSize: 15, fontWeight: 700 }}>
+                  {platformStats.members > 0 ? platformStats.members.toLocaleString() : "—"}
+                </p>
                 <p style={{ fontSize: 11, color: "var(--muted)" }}>Members</p>
               </div>
               <div>
-                <p style={{ fontSize: 15, fontWeight: 700 }}>382</p>
-                <p style={{ fontSize: 11, color: "var(--muted)" }}>Online</p>
+                <p style={{ fontSize: 15, fontWeight: 700 }}>
+                  {platformStats.posts > 0 ? platformStats.posts.toLocaleString() : posts.length > 0 ? posts.length : "—"}
+                </p>
+                <p style={{ fontSize: 11, color: "var(--muted)" }}>Posts</p>
               </div>
             </div>
           </div>
