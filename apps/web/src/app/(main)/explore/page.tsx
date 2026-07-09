@@ -5,6 +5,7 @@ import { Search, MapPin, Users, Star, LayoutGrid, List, SlidersHorizontal, Loade
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useApiClient } from "@/lib/api";
+import { ProfileCard } from "@/components/ui/profile-card";
 
 const skillFilters = ["All", "React", "TypeScript", "Python", "Go", "Rust", "DevOps", "Mobile", "AI/ML", "Design"];
 
@@ -160,61 +161,94 @@ export default function ExplorePage() {
             style={{ display: "grid", gridTemplateColumns: view === "grid" ? "repeat(3, 1fr)" : "1fr", gap: 16 }}
             className={view === "grid" ? "explore-grid" : ""}
           >
-            {developers.map((dev, i) => (
-              <Link
-                key={dev.id}
-                href={`/profile/${dev.username}`}
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.04, 0.3) }}
-                  className="card-hover"
-                  style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: view === "grid" ? "20px" : "16px 20px", display: "flex", flexDirection: view === "grid" ? "column" : "row", alignItems: view === "grid" ? "flex-start" : "center", gap: view === "grid" ? 16 : 20, height: "100%" }}
+            {developers.map((dev, i) => {
+              const instagramLink = dev.socialLinks?.find((s: any) => s.platform.toLowerCase() === "instagram")?.url || `https://instagram.com/${dev.username}`;
+              const twitterLink = dev.socialLinks?.find((s: any) => s.platform.toLowerCase() === "twitter")?.url || `https://twitter.com/${dev.username}`;
+              const threadsLink = dev.socialLinks?.find((s: any) => s.platform.toLowerCase() === "threads")?.url || `https://threads.net/@${dev.username}`;
+
+              if (view === "grid") {
+                return (
+                  <motion.div
+                    key={dev.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i * 0.04, 0.3) }}
+                  >
+                    <ProfileCard
+                      name={dev.username}
+                      title={dev.profile?.headline || dev.bio || "Product Builder & Developer"}
+                      avatarUrl={dev.avatarUrl || undefined}
+                      backgroundUrl={dev.coverUrl || undefined}
+                      likes={dev._count?.followers || 0}
+                      posts={dev._count?.projects || 0}
+                      views={dev.level * 100 + (dev.streak || 0) * 10}
+                      instagramUrl={instagramLink}
+                      twitterUrl={twitterLink}
+                      threadsUrl={threadsLink}
+                      isFollowing={followed.has(dev.id)}
+                      onFollowToggle={(e) => toggleFollow(e, dev)}
+                      profileUrl={`/profile/${dev.username}`}
+                    />
+                  </motion.div>
+                );
+              }
+
+              return (
+                <Link
+                  key={dev.id}
+                  href={`/profile/${dev.username}`}
+                  style={{ textDecoration: "none", color: "inherit" }}
                 >
-                  <Avatar username={dev.username} avatarUrl={dev.avatarUrl} size={view === "grid" ? 56 : 48} />
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i * 0.04, 0.3) }}
+                    className="card-hover"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "16px 20px", display: "flex", alignItems: "center", gap: 20, height: "100%" }}
+                  >
+                    <Avatar username={dev.username} avatarUrl={dev.avatarUrl} size={48} />
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <h3 style={{ fontSize: 15, fontWeight: 700 }}>{dev.username}</h3>
-                    </div>
-                    {dev.profile?.headline && (
-                      <p style={{ fontSize: 13, color: "var(--secondary)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {dev.profile.headline}
-                      </p>
-                    )}
-                    {dev.profile?.location && (
-                      <p style={{ fontSize: 12, color: "var(--muted)", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
-                        <MapPin size={11} />
-                        {dev.profile.location}
-                      </p>
-                    )}
-
-                    {/* Stats + Follow */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
-                      <div style={{ display: "flex", gap: 14 }}>
-                        <span style={{ fontSize: 12, color: "var(--muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                          <Users size={12} />
-                          {dev._count?.followers || 0}
-                        </span>
-                        <span style={{ fontSize: 12, color: "var(--muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                          <Star size={12} />
-                          {dev._count?.projects || 0} projects
-                        </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 700 }}>{dev.username}</h3>
                       </div>
-                      <button
-                        onClick={(e) => toggleFollow(e, dev)}
-                        style={{ padding: "6px 14px", borderRadius: "var(--radius-full)", background: followed.has(dev.id) ? "var(--border)" : "var(--accent)", border: "none", color: followed.has(dev.id) ? "var(--secondary)" : "white", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "opacity 150ms" }}
-                        className="hover:opacity-85"
-                      >
-                        {followed.has(dev.id) ? "Following" : "Follow"}
-                      </button>
+                      {dev.profile?.headline && (
+                        <p style={{ fontSize: 13, color: "var(--secondary)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {dev.profile.headline}
+                        </p>
+                      )}
+                      {dev.profile?.location && (
+                        <p style={{ fontSize: 12, color: "var(--muted)", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+                          <MapPin size={11} />
+                          {dev.profile.location}
+                        </p>
+                      )}
+
+                      {/* Stats + Follow */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
+                        <div style={{ display: "flex", gap: 14 }}>
+                          <span style={{ fontSize: 12, color: "var(--muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                            <Users size={12} />
+                            {dev._count?.followers || 0}
+                          </span>
+                          <span style={{ fontSize: 12, color: "var(--muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                            <Star size={12} />
+                            {dev._count?.projects || 0} projects
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => toggleFollow(e, dev)}
+                          style={{ padding: "6px 14px", borderRadius: "var(--radius-full)", background: followed.has(dev.id) ? "var(--border)" : "var(--accent)", border: "none", color: followed.has(dev.id) ? "var(--secondary)" : "white", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "opacity 150ms" }}
+                          className="hover:opacity-85"
+                        >
+                          {followed.has(dev.id) ? "Following" : "Follow"}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              </Link>
-            ))}
+                  </motion.div>
+                </Link>
+              );
+            })}
           </motion.div>
         </>
       )}
