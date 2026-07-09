@@ -24,7 +24,8 @@ const router: Router = Router();
 router.get('/diagnostic', async (req, res) => {
   try {
     const columns = await prisma.$queryRawUnsafe(`PRAGMA table_info(followers)`);
-    res.json({ success: true, columns });
+    const serialized = JSON.parse(JSON.stringify(columns, (key, value) => typeof value === 'bigint' ? value.toString() : value));
+    res.json({ success: true, columns: serialized });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
