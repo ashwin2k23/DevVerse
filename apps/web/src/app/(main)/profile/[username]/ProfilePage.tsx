@@ -213,15 +213,15 @@ export default function ProfilePage({ username }: ProfilePageProps) {
   const [contributions, setContributions] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!username) return;
-    authApi.get(`/users/${username}/contributions`)
+    if (!profile?.username) return;
+    authApi.get(`/users/${profile.username}/contributions`)
       .then((res) => {
         if (res.data?.success) {
           setContributions(res.data.data || []);
         }
       })
       .catch((err) => console.error("Error fetching contributions:", err));
-  }, [username]);
+  }, [profile?.username]);
 
   const contributionsMap = contributions.reduce((acc: Record<string, number>, dateStr: string) => {
     const d = new Date(dateStr).toDateString();
@@ -315,46 +315,57 @@ export default function ProfilePage({ username }: ProfilePageProps) {
   useEffect(() => {
     setLoading(true);
     setError(null);
+
+    const isTargetingMe = userLoaded && currentUser && (
+      username === currentUser.username ||
+      username === currentUser.emailAddresses?.[0]?.emailAddress?.split('@')?.[0] ||
+      username === currentUser.id
+    );
+
+    const fetchFallback = () => {
+      authApi.get("/users/me/profile")
+        .then((res2) => {
+          if (res2.data?.success && res2.data?.data) {
+            setProfile(res2.data.data);
+            setIsFollowing(false);
+          } else {
+            setError("api_error");
+          }
+        })
+        .catch(() => {
+          setError("api_error");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    };
+
     authApi.get(`/users/${username}`)
       .then((res) => {
         if (res.data?.success && res.data?.data) {
           setProfile(res.data.data);
           setIsFollowing(!!res.data.data.isFollowing);
+          setLoading(false);
         } else {
-          setError("not_found");
+          if (isTargetingMe) {
+            fetchFallback();
+          } else {
+            setError("not_found");
+            setLoading(false);
+          }
         }
       })
       .catch((err: any) => {
         console.error("Profile load error:", err);
-        const status = err?.response?.status;
-        if (status === 404) {
-          setError("not_found");
+        if (isTargetingMe) {
+          fetchFallback();
+        } else {
+          const status = err?.response?.status;
+          setError(status === 404 ? "not_found" : "api_error");
           setLoading(false);
-          return;
         }
-        // Non-404 error (network/server error) — try /users/me/profile as fallback
-        // This handles cases where Clerk username differs from DB username
-        authApi.get("/users/me/profile")
-          .then((res2) => {
-            if (res2.data?.success && res2.data?.data) {
-              setProfile(res2.data.data);
-              setIsFollowing(false);
-            } else {
-              setError("api_error");
-            }
-          })
-          .catch(() => {
-            setError("api_error");
-          })
-          .finally(() => {
-            setLoading(false);
-          });
-        return; // don't call finally below
-      })
-      .finally(() => {
-        setLoading(false);
       });
-  }, [username]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [username, userLoaded, currentUser]);
 
   const handleFollowToggle = async () => {
     if (!profile || togglingFollow) return;
@@ -427,7 +438,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <button
-            onClick={() => { setError(null); setLoading(true); authApi.get(`/users/${username}`).then(r => { if (r.data?.success) setProfile(r.data.data); else setError("not_found"); }).catch(() => setError("api_error")).finally(() => setLoading(false)); }}
+            onClick={() => window.location.reload()}
             style={{ padding: "8px 20px", borderRadius: "var(--radius-full)", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--primary)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
           >
             🔄 Retry
