@@ -325,9 +325,30 @@ export default function ProfilePage({ username }: ProfilePageProps) {
       })
       .catch((err: any) => {
         console.error("Profile load error:", err);
-        // Network error (API unreachable) vs 404 (user doesn't exist)
         const status = err?.response?.status;
-        setError(status === 404 ? "not_found" : "api_error");
+        if (status === 404) {
+          setError("not_found");
+          setLoading(false);
+          return;
+        }
+        // Non-404 error (network/server error) — try /users/me/profile as fallback
+        // This handles cases where Clerk username differs from DB username
+        authApi.get("/users/me/profile")
+          .then((res2) => {
+            if (res2.data?.success && res2.data?.data) {
+              setProfile(res2.data.data);
+              setIsFollowing(false);
+            } else {
+              setError("api_error");
+            }
+          })
+          .catch(() => {
+            setError("api_error");
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+        return; // don't call finally below
       })
       .finally(() => {
         setLoading(false);
