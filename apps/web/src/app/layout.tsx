@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import "@/styles/globals.css";
+import GlobalCursor from "@/components/layout/GlobalCursor";
 
 export const metadata: Metadata = {
   title: {
@@ -56,6 +57,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange={false}
           >
+            <GlobalCursor />
             {children}
             <Toaster
               position="bottom-right"

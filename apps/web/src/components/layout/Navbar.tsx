@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 import {
@@ -17,6 +17,9 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useApiClient } from "@/lib/api";
+import { useSocket } from "@/context/SocketContext";
+import { formatRelativeTime } from "@/lib/utils";
 
 export default function Navbar() {
   const { user } = useUser();
@@ -26,9 +29,54 @@ export default function Navbar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const authApi = useApiClient();
+  const { socket } = useSocket();
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  const fetchNotifications = async () => {
+    if (!user) return;
+    try {
+      const res = await authApi.get("/notifications");
+      if (res.data?.success) {
+        setNotifications(res.data.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchNotifications();
+  }, [user]);
+
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    const handleNewNotification = (notif: any) => {
+      setNotifications((prev) => [notif, ...prev]);
+    };
+
+    socket.on("notification:new", handleNewNotification);
+    return () => {
+      socket.off("notification:new", handleNewNotification);
+    };
+  }, [socket, user]);
+
+  const unreadCount = notifications.filter((n) => !n.readAt).length;
+
+  const handleMarkAllRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date() })));
+    try {
+      await authApi.put("/notifications/read-all");
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <>
@@ -211,18 +259,20 @@ export default function Navbar() {
               >
                 <Bell size={16} />
                 {/* Unread badge */}
-                <span
-                  style={{
-                    position: "absolute",
-                    top: 6,
-                    right: 6,
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: "var(--accent)",
-                    border: "2px solid var(--background)",
-                  }}
-                />
+                {unreadCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 6,
+                      right: 6,
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: "var(--accent)",
+                      border: "2px solid var(--background)",
+                    }}
+                  />
+                )}
               </button>
 
               {/* Notification dropdown */}
@@ -257,6 +307,7 @@ export default function Navbar() {
                     >
                       <span style={{ fontWeight: 600, fontSize: 15 }}>Notifications</span>
                       <button
+                        onClick={handleMarkAllRead}
                         style={{
                           fontSize: 12,
                           color: "var(--accent)",
@@ -269,41 +320,43 @@ export default function Navbar() {
                         Mark all read
                       </button>
                     </div>
-                    {[
-                      { text: "Alex liked your project DevVerse", time: "2m ago", type: "like" },
-                      { text: "Sarah started following you", time: "15m ago", type: "follow" },
-                      { text: "Marcus commented on your post", time: "1h ago", type: "comment" },
-                    ].map((n, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          padding: "14px 20px",
-                          display: "flex",
-                          gap: 12,
-                          alignItems: "flex-start",
-                          borderBottom: i < 2 ? "1px solid var(--border-subtle)" : "none",
-                          background: i === 0 ? "var(--accent-muted)" : "transparent",
-                          cursor: "pointer",
-                          transition: "background 150ms",
-                        }}
-                        className="hover:bg-surface-elevated"
-                      >
-                        <div
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            background: i === 0 ? "var(--accent)" : "transparent",
-                            flexShrink: 0,
-                            marginTop: 6,
-                          }}
-                        />
-                        <div>
-                          <p style={{ fontSize: 13, lineHeight: 1.5 }}>{n.text}</p>
-                          <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>{n.time}</p>
-                        </div>
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: "24px 20px", textAlign: "center", color: "var(--secondary)", fontSize: 13 }}>
+                        No notifications yet
                       </div>
-                    ))}
+                    ) : (
+                      notifications.slice(0, 5).map((n, i) => (
+                        <div
+                          key={n.id || i}
+                          style={{
+                            padding: "14px 20px",
+                            display: "flex",
+                            gap: 12,
+                            alignItems: "flex-start",
+                            borderBottom: i < Math.min(notifications.length, 5) - 1 ? "1px solid var(--border-subtle)" : "none",
+                            background: !n.readAt ? "var(--accent-muted)" : "transparent",
+                            cursor: "pointer",
+                            transition: "background 150ms",
+                          }}
+                          className="hover:bg-surface-elevated"
+                        >
+                          <div
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              background: !n.readAt ? "var(--accent)" : "transparent",
+                              flexShrink: 0,
+                              marginTop: 6,
+                            }}
+                          />
+                          <div>
+                            <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--primary)" }}>{n.message}</p>
+                            <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>{formatRelativeTime(n.createdAt)}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
                     <div style={{ padding: 12, textAlign: "center" }}>
                       <Link
                         href="/notifications"

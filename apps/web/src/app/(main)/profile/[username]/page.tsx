@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Profile",
 };
 
-export default function Page({ params }: { params: { username: string } }) {
-  return <ProfilePage username={params.username} />;
+export default async function Page({ params }: { params: Promise<{ username: string }> }) {
+  const resolvedParams = await params;
+  return <ProfilePage username={resolvedParams.username} />;
 }

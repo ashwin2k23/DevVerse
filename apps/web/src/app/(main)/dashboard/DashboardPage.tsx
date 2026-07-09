@@ -50,7 +50,10 @@ export default function DashboardPage() {
 
     const loadDashboard = async () => {
       try {
-        const username = user.username || user.id;
+        const username =
+          user.username ||
+          user.emailAddresses?.[0]?.emailAddress?.split('@')?.[0] ||
+          user.id;
 
         // Fetch User profile (stats)
         const profileRes = await authApi.get(`/users/${username}`).catch(() => null);

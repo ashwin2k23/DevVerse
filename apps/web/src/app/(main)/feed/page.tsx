@@ -2,10 +2,12 @@
 
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import {
-  Heart, MessageCircle, Bookmark, Share2, MoreHorizontal,
+  MessageCircle, Bookmark, Share2, MoreHorizontal,
   Image, Code, Smile, Send, TrendingUp, Users, Loader2,
+  ArrowBigUp, ArrowBigDown,
 } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
 import { useApiClient } from "@/lib/api";
@@ -36,16 +38,16 @@ function Avatar({ username, avatarUrl, size = 40 }: { username: string; avatarUr
   const color = colors[username.charCodeAt(0) % colors.length];
   if (avatarUrl) return <img src={avatarUrl} alt={username} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />;
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg, var(--tw-gradient-stops))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.32, fontWeight: 700, color: "white", flexShrink: 0 }}
+    <div style={{ width: size, height: size, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.32, fontWeight: 700, color: "white", flexShrink: 0 }}
       className={`bg-gradient-to-br ${color}`}>
       {initials}
     </div>
   );
 }
 
-// ─── PostCard ─────────────────────────────────────────────────────────────────
 function PostCard({ post, onLike, onBookmark }: { post: Post; onLike: (id: string, liked: boolean) => void; onBookmark: (id: string, bookmarked: boolean) => void }) {
   const [liked, setLiked] = useState(!!post.isLiked);
+  const [downvoted, setDownvoted] = useState(false);
   const [likes, setLikes] = useState(post._count.likes);
   const [bookmarked, setBookmarked] = useState(!!post.isBookmarked);
   const authApi = useApiClient();
@@ -53,14 +55,29 @@ function PostCard({ post, onLike, onBookmark }: { post: Post; onLike: (id: strin
   const handleLike = async () => {
     const next = !liked;
     setLiked(next);
-    setLikes((l) => l + (next ? 1 : -1));
+    setLikes((l) => l + (next ? (downvoted ? 2 : 1) : -1));
+    if (downvoted) setDownvoted(false);
     try {
       if (next) await authApi.post(`/feed/${post.id}/like`);
       else await authApi.delete(`/feed/${post.id}/like`);
       onLike(post.id, next);
     } catch {
       setLiked(!next);
-      setLikes((l) => l + (next ? -1 : 1));
+      setLikes((l) => l + (next ? -1 : (downvoted ? -2 : -1)));
+    }
+  };
+
+  const handleDownvote = () => {
+    if (downvoted) {
+      setDownvoted(false);
+      setLikes((l) => l + 1);
+    } else {
+      setDownvoted(true);
+      setLikes((l) => l - (liked ? 2 : 1));
+      if (liked) {
+        setLiked(false);
+        authApi.delete(`/feed/${post.id}/like`).catch(() => {});
+      }
     }
   };
 
@@ -76,54 +93,142 @@ function PostCard({ post, onLike, onBookmark }: { post: Post; onLike: (id: strin
     }
   };
 
+  // Generate a mock subreddit dynamically depending on content / post.type
+  const subreddit = post.type === "CODE" ? "r/programming" : "r/devverse";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "18px 20px", marginBottom: 16 }}
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        display: "flex",
+        marginBottom: 16,
+        overflow: "hidden",
+      }}
     >
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Avatar username={post.user.username} avatarUrl={post.user.avatarUrl} />
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 14, fontWeight: 600 }}>{post.user.username}</span>
-              {post.type === "CODE" && (
-                <span style={{ fontSize: 10, fontWeight: 600, background: "rgba(37,99,235,0.1)", color: "var(--accent)", borderRadius: 4, padding: "1px 6px" }}>CODE</span>
-              )}
+      {/* Reddit upvote/downvote bar */}
+      <div
+        style={{
+          width: 44,
+          background: "rgba(0,0,0,0.015)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "12px 4px",
+          borderRight: "1px solid var(--border-subtle)",
+          gap: 4,
+        }}
+        className="dark:bg-white/5"
+      >
+        <button
+          onClick={handleLike}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: liked ? "#FF4500" : "var(--muted)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 4,
+            borderRadius: 4,
+            transition: "background 150ms",
+          }}
+          className="hover:bg-surface-elevated"
+          title="Upvote"
+        >
+          <ArrowBigUp size={22} fill={liked ? "#FF4500" : "none"} strokeWidth={1.5} />
+        </button>
+
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: liked ? "#FF4500" : downvoted ? "#7193FF" : "var(--primary)",
+            minWidth: 20,
+            textAlign: "center",
+          }}
+        >
+          {likes}
+        </span>
+
+        <button
+          onClick={handleDownvote}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: downvoted ? "#7193FF" : "var(--muted)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 4,
+            borderRadius: 4,
+            transition: "background 150ms",
+          }}
+          className="hover:bg-surface-elevated"
+          title="Downvote"
+        >
+          <ArrowBigDown size={22} fill={downvoted ? "#7193FF" : "none"} strokeWidth={1.5} />
+        </button>
+      </div>
+
+      {/* Main card content */}
+      <div style={{ flex: 1, padding: "16px 20px" }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Link href={`/profile/${post.user.username}`}>
+              <Avatar username={post.user.username} avatarUrl={post.user.avatarUrl} size={30} />
+            </Link>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>
+                  {subreddit}
+                </span>
+                <span style={{ fontSize: 11, color: "var(--muted)" }}>·</span>
+                <span style={{ fontSize: 11, color: "var(--secondary)" }}>
+                  Posted by <Link href={`/profile/${post.user.username}`} style={{ fontWeight: 500, color: "var(--secondary)" }} className="hover:underline">u/{post.user.username}</Link>
+                </span>
+                <span style={{ fontSize: 11, color: "var(--muted)" }}>·</span>
+                <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                  {formatRelativeTime(new Date(post.createdAt))}
+                </span>
+              </div>
             </div>
-            <p style={{ fontSize: 12, color: "var(--muted)" }}>@{post.user.username} · {formatRelativeTime(new Date(post.createdAt))}</p>
           </div>
+          <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4, borderRadius: 6 }} className="hover:bg-surface-elevated">
+            <MoreHorizontal size={16} />
+          </button>
         </div>
-        <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4, borderRadius: 6 }} className="hover:bg-surface-elevated">
-          <MoreHorizontal size={16} />
-        </button>
-      </div>
 
-      {/* Content */}
-      <div style={{ marginBottom: 14 }}>
-        <p style={{ fontSize: 14, lineHeight: 1.65, whiteSpace: "pre-line" }}>{post.content}</p>
-      </div>
+        {/* Content */}
+        <div style={{ marginBottom: 14 }}>
+          <p style={{ fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-line", color: "var(--primary)" }}>{post.content}</p>
+        </div>
 
-      {/* Actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: 4, paddingTop: 12, borderTop: "1px solid var(--border-subtle)" }}>
-        <button id={`like-post-${post.id}`} onClick={handleLike}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: "var(--radius)", border: "none", background: liked ? "rgba(239,68,68,0.08)" : "transparent", color: liked ? "#EF4444" : "var(--secondary)", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 150ms" }}
-          className="hover:bg-surface-elevated">
-          <Heart size={15} fill={liked ? "#EF4444" : "none"} />{likes}
-        </button>
-        <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: "var(--radius)", border: "none", background: "transparent", color: "var(--secondary)", fontSize: 13, cursor: "pointer" }} className="hover:bg-surface-elevated">
-          <MessageCircle size={15} />{post._count.comments}
-        </button>
-        <button id={`bookmark-post-${post.id}`} onClick={handleBookmark}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: "var(--radius)", border: "none", background: bookmarked ? "var(--accent-muted)" : "transparent", color: bookmarked ? "var(--accent)" : "var(--secondary)", fontSize: 13, cursor: "pointer", transition: "all 150ms" }}
-          className="hover:bg-surface-elevated">
-          <Bookmark size={15} fill={bookmarked ? "var(--accent)" : "none"} />
-        </button>
-        <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: "var(--radius)", border: "none", background: "transparent", color: "var(--secondary)", fontSize: 13, cursor: "pointer", marginLeft: "auto" }} className="hover:bg-surface-elevated">
-          <Share2 size={15} />
-        </button>
+        {/* Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 10, borderTop: "1px solid var(--border-subtle)" }}>
+          <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: "var(--radius-full)", border: "none", background: "rgba(0,0,0,0.03)", color: "var(--secondary)", fontSize: 12, fontWeight: 600, cursor: "pointer" }} className="hover:bg-surface-elevated dark:bg-white/5">
+            <MessageCircle size={14} />
+            {post._count.comments} Comments
+          </button>
+
+          <button id={`bookmark-post-${post.id}`} onClick={handleBookmark}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: "var(--radius-full)", border: "none", background: bookmarked ? "var(--accent-muted)" : "rgba(0,0,0,0.03)", color: bookmarked ? "var(--accent)" : "var(--secondary)", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 150ms" }}
+            className="hover:bg-surface-elevated dark:bg-white/5">
+            <Bookmark size={14} fill={bookmarked ? "var(--accent)" : "none"} />
+            {bookmarked ? "Saved" : "Save"}
+          </button>
+
+          <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: "var(--radius-full)", border: "none", background: "rgba(0,0,0,0.03)", color: "var(--secondary)", fontSize: 12, fontWeight: 600, cursor: "pointer", marginLeft: "auto" }} className="hover:bg-surface-elevated dark:bg-white/5">
+            <Share2 size={14} />
+            Share
+          </button>
+        </div>
       </div>
     </motion.div>
   );
@@ -303,11 +408,49 @@ export default function FeedPage() {
 
         {/* Sidebar */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* About Community Info Card */}
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 20 }}>
+            <h2 style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>
+              About Community
+            </h2>
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--primary)" }}>
+              Welcome to <strong>r/DevVerse</strong>! A neobrutalist space for developers to sync code, showcase products, and check in on streaks.
+            </p>
+            <div style={{ display: "flex", gap: 24, marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border-subtle)" }}>
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 700 }}>14.2k</p>
+                <p style={{ fontSize: 11, color: "var(--muted)" }}>Members</p>
+              </div>
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 700 }}>382</p>
+                <p style={{ fontSize: 11, color: "var(--muted)" }}>Online</p>
+              </div>
+            </div>
+          </div>
+
+          {/* r/DevVerse Rules Card */}
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 20 }}>
+            <h2 style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>
+              r/DevVerse Rules
+            </h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                "1. Keep posts relevant to development & tech",
+                "2. Be respectful and collaborative",
+                "3. Share high-quality code and context",
+                "4. No spam or self-promotion loops",
+              ].map((rule, idx) => (
+                <div key={idx} style={{ fontSize: 12, color: "var(--secondary)", borderBottom: idx < 3 ? "1px solid var(--border-subtle)" : "none", paddingBottom: idx < 3 ? 8 : 0 }}>
+                  {rule}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Trending topics */}
           <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 20 }}>
-            <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>
-              <TrendingUp size={15} style={{ display: "inline", marginRight: 6, verticalAlign: "middle", color: "var(--accent)" }} />
-              Trending
+            <h2 style={{ fontSize: 12, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>
+              Trending Communities
             </h2>
             {["#TypeScript", "#ReactServer", "#OpenSource", "#DevOps", "#WebPerf"].map((tag, i) => (
               <div key={tag} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < 4 ? "1px solid var(--border-subtle)" : "none" }}>

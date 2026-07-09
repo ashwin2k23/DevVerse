@@ -6,12 +6,14 @@ import {
   getMessages,
   sendMessage,
   markAsRead,
+  getUnreadCount,
 } from '../controllers/messageController';
 
 const router: Router = Router();
 
 router.use(requireAuth);
 
+router.get('/unread-count', getUnreadCount);
 router.get('/conversations', getConversations);
 router.post('/conversations', getOrCreateConversation);
 router.get('/conversations/:conversationId/messages', getMessages);

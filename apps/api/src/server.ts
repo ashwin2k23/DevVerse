@@ -16,10 +16,34 @@ dotenv.config();
 const app: Express = express();
 const httpServer = createServer(app);
 
+const allowedOrigins = [
+  process.env.CLIENT_URL || 'http://localhost:3000',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+];
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || origin.startsWith('http://localhost:') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
+
 // ─── Socket.io ──────────────────────────────────────────────────────────────
 export const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      if (!origin || origin.startsWith('http://localhost:') || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -28,10 +52,7 @@ export const io = new Server(httpServer, {
 initializeSocket(io);
 
 // ─── Middleware ──────────────────────────────────────────────────────────────
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  credentials: true,
-}));
+app.use(cors(corsOptions));
 
 app.use(clerkMiddleware());
 app.use(express.json({ limit: '10mb' }));

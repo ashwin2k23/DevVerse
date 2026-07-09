@@ -50,6 +50,7 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
 export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const username = req.params.username as string;
+    console.log('[DEBUG] getProfile called with username:', username);
 
     const user = await prisma.user.findUnique({
       where: { username },
@@ -65,12 +66,30 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
           take: 6,
           include: { _count: { select: { likes: true, comments: true } } },
         },
+        posts: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                avatarUrl: true,
+                level: true,
+              },
+            },
+            _count: {
+              select: { likes: true, comments: true },
+            },
+          },
+        },
         _count: {
           select: { followers: true, following: true, projects: true, posts: true },
         },
       },
     });
 
+    console.log('[DEBUG] getProfile user query result:', user ? 'FOUND' : 'NOT FOUND');
     if (!user) throw createError('User not found', 404);
 
     // Check if current user follows this profile
@@ -87,6 +106,7 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
 
     res.json({ success: true, data: { ...user, isFollowing } });
   } catch (error: any) {
+    console.error('[ERROR] getProfile caught exception:', error);
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 };

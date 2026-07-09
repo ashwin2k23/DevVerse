@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { useState, useEffect } from "react";
+import { useApiClient } from "@/lib/api";
 import {
   LayoutDashboard,
   Newspaper,
@@ -16,6 +17,7 @@ import {
   Bookmark,
   Settings,
   Compass,
+  User,
 } from "lucide-react";
 
 const navItems = [
@@ -34,6 +36,36 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  const { user } = useUser();
+  const authApi = useApiClient();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      try {
+        const res = await authApi.get("/messages/unread-count");
+        if (res.data?.success) {
+          setUnreadCount(res.data.data?.count || 0);
+        }
+      } catch { /* ignore */ }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 10000); // poll every 10 seconds
+    return () => clearInterval(interval);
+  }, [user, authApi]);
+
+  const localUsername =
+    user?.username ||
+    user?.emailAddresses?.[0]?.emailAddress?.split('@')?.[0] ||
+    user?.id;
+
+  const items = [
+    ...navItems.slice(0, 8),
+    { href: localUsername ? `/profile/${localUsername}` : "#", icon: User, label: "My Profile" },
+    ...navItems.slice(8),
+  ];
 
   return (
     <div
@@ -61,7 +93,7 @@ export default function Sidebar() {
         }}
         className="hide-scrollbar"
       >
-        {navItems.map((item, idx) => {
+        {items.map((item, idx) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
@@ -132,7 +164,7 @@ export default function Sidebar() {
               </span>
 
               {/* Message notification count */}
-              {item.label === "Messages" && (
+              {item.label === "Messages" && unreadCount > 0 && (
                 <span
                   style={{
                     position: "relative",
@@ -147,7 +179,7 @@ export default function Sidebar() {
                     textAlign: "center",
                   }}
                 >
-                  3
+                  {unreadCount}
                 </span>
               )}
             </Link>

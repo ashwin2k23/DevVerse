@@ -9,6 +9,7 @@ import {
   MapPin, Globe, Mail, CalendarDays, Users,
   FolderKanban, Newspaper, Star, Edit,
   UserPlus, UserMinus, MessageSquare, Award, Flame, Loader2,
+  ArrowBigUp, ArrowBigDown,
 } from "lucide-react";
 import { Github, Twitter, Linkedin } from "@/components/shared/BrandIcons";
 import { useApiClient } from "@/lib/api";
@@ -61,6 +62,139 @@ const defaultAchievements = [
   { icon: "🚀", title: "Project Launch", description: "Project with 1K+ stars" },
 ];
 
+function ProfilePostCard({ post }: { post: any }) {
+  const [liked, setLiked] = useState(false);
+  const [downvoted, setDownvoted] = useState(false);
+  const [likes, setLikes] = useState(post._count?.likes || 0);
+  const authApi = useApiClient();
+
+  const handleLike = async () => {
+    const next = !liked;
+    setLiked(next);
+    setLikes((l: number) => l + (next ? (downvoted ? 2 : 1) : -1));
+    if (downvoted) setDownvoted(false);
+    try {
+      if (next) await authApi.post(`/feed/${post.id}/like`);
+      else await authApi.delete(`/feed/${post.id}/like`);
+    } catch {
+      setLiked(!next);
+      setLikes((l: number) => l + (next ? -1 : (downvoted ? -2 : -1)));
+    }
+  };
+
+  const handleDownvote = () => {
+    if (downvoted) {
+      setDownvoted(false);
+      setLikes((l: number) => l + 1);
+    } else {
+      setDownvoted(true);
+      setLikes((l: number) => l - (liked ? 2 : 1));
+      if (liked) {
+        setLiked(false);
+        authApi.delete(`/feed/${post.id}/like`).catch(() => {});
+      }
+    }
+  };
+
+  const formattedTime = post.createdAt ? new Date(post.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "recently";
+
+  return (
+    <div
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        display: "flex",
+        marginBottom: 16,
+        overflow: "hidden",
+      }}
+    >
+      {/* Reddit upvote/downvote bar */}
+      <div
+        style={{
+          width: 44,
+          background: "rgba(0,0,0,0.015)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "12px 4px",
+          borderRight: "1px solid var(--border-subtle)",
+          gap: 4,
+        }}
+        className="dark:bg-white/5"
+      >
+        <button
+          onClick={handleLike}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: liked ? "#FF4500" : "var(--muted)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 4,
+            borderRadius: 4,
+            transition: "background 150ms",
+          }}
+          className="hover:bg-surface-elevated"
+          title="Upvote"
+        >
+          <ArrowBigUp size={22} fill={liked ? "#FF4500" : "none"} strokeWidth={1.5} />
+        </button>
+
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: liked ? "#FF4500" : downvoted ? "#7193FF" : "var(--primary)",
+            minWidth: 20,
+            textAlign: "center",
+          }}
+        >
+          {likes}
+        </span>
+
+        <button
+          onClick={handleDownvote}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: downvoted ? "#7193FF" : "var(--muted)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 4,
+            borderRadius: 4,
+            transition: "background 150ms",
+          }}
+          className="hover:bg-surface-elevated"
+          title="Downvote"
+        >
+          <ArrowBigDown size={22} fill={downvoted ? "#7193FF" : "none"} strokeWidth={1.5} />
+        </button>
+      </div>
+
+      {/* Main card content */}
+      <div style={{ flex: 1, padding: "16px 20px" }}>
+        <div style={{ display: "flex", gap: 6, fontSize: 11, color: "var(--muted)", marginBottom: 8, flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 700, color: "var(--accent)" }}>
+            r/{post.type === "CODE" ? "typescript" : "programming"}
+          </span>
+          <span>·</span>
+          <span>Posted by u/{post.user?.username || "developer"}</span>
+          <span>·</span>
+          <span>{formattedTime}</span>
+        </div>
+        <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--primary)", whiteSpace: "pre-line" }}>
+          {post.content}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage({ username }: ProfilePageProps) {
   const { user: currentUser, isLoaded: userLoaded } = useUser();
   const authApi = useApiClient();
@@ -71,6 +205,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
   const [error, setError] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [togglingFollow, setTogglingFollow] = useState(false);
+  const [activeTab, setActiveTab] = useState<"projects" | "posts">("projects");
 
   useEffect(() => {
     setLoading(true);
@@ -180,7 +315,16 @@ export default function ProfilePage({ username }: ProfilePageProps) {
     );
   }
 
-  const isMe = userLoaded && currentUser?.username === profile.username;
+  const localCurrentUsername =
+    currentUser?.username ||
+    currentUser?.emailAddresses?.[0]?.emailAddress?.split('@')?.[0] ||
+    currentUser?.id;
+
+  const isMe = userLoaded && (
+    currentUser?.username === profile.username ||
+    localCurrentUsername === profile.username ||
+    currentUser?.id === profile.clerkId
+  );
   const joinDate = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "";
 
   return (
@@ -466,159 +610,293 @@ export default function ProfilePage({ username }: ProfilePageProps) {
         </motion.div>
       </div>
 
+      {/* Dynamic Tab Switcher */}
+      <div style={{
+        display: "flex",
+        borderBottom: "1px solid var(--border)",
+        marginTop: 28,
+        gap: 24,
+      }}>
+        <button
+          onClick={() => setActiveTab("projects")}
+          style={{
+            background: "none",
+            border: "none",
+            borderBottom: activeTab === "projects" ? "3px solid var(--accent)" : "3px solid transparent",
+            color: activeTab === "projects" ? "var(--primary)" : "var(--muted)",
+            fontSize: 13,
+            fontWeight: 700,
+            padding: "8px 12px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            transition: "all 150ms",
+          }}
+        >
+          <FolderKanban size={15} />
+          Projects & Stats
+        </button>
+
+        <button
+          onClick={() => setActiveTab("posts")}
+          style={{
+            background: "none",
+            border: "none",
+            borderBottom: activeTab === "posts" ? "3px solid var(--accent)" : "3px solid transparent",
+            color: activeTab === "posts" ? "var(--primary)" : "var(--muted)",
+            fontSize: 13,
+            fontWeight: 700,
+            padding: "8px 12px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            transition: "all 150ms",
+          }}
+        >
+          <Newspaper size={15} />
+          Posts ({profile.posts?.length || 0})
+        </button>
+      </div>
+
       {/* Main content grid */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 280px",
           gap: 24,
-          marginTop: 32,
+          marginTop: 24,
         }}
         className="profile-grid"
       >
         {/* Left column — Projects, Activity */}
         <div>
-          {/* Projects */}
-          <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            style={{ marginBottom: 28 }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700 }}>
-                <FolderKanban size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle", color: "var(--accent)" }} />
-                Projects
-              </h2>
-            </div>
-            {profile.projects && profile.projects.length > 0 ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-                {profile.projects.map((proj: any, i: number) => {
-                  const colors = ["from-blue-500 to-violet-600", "from-emerald-500 to-teal-600", "from-orange-500 to-red-600"];
-                  const grad = colors[i % colors.length];
-                  return (
-                    <motion.div
-                      key={proj.id}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.35 + i * 0.08 }}
-                      className="card-hover"
-                      style={{
-                        background: "var(--surface)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "var(--radius-md)",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {/* Project banner */}
-                      <div
-                        style={{
-                          height: 80,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 24,
-                          fontWeight: 800,
-                          color: "rgba(255,255,255,0.6)",
-                          letterSpacing: "-0.02em",
-                        }}
-                        className={`bg-gradient-to-br ${grad}`}
-                      >
-                        {proj.title.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div style={{ padding: 14 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <h3 style={{ fontSize: 14, fontWeight: 700 }}>{proj.title}</h3>
-                          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--muted)", fontSize: 12 }}>
-                            <Star size={12} fill="currentColor" />
-                            {proj._count?.likes || 0}
-                          </div>
-                        </div>
-                        <p style={{ fontSize: 12, color: "var(--secondary)", marginTop: 4, lineHeight: 1.5 }}>
-                          {proj.description}
-                        </p>
-                        {proj.techStack && (
-                          <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-                            {proj.techStack.split(",").filter(Boolean).map((t: string) => (
-                              <span
-                                key={t}
-                                style={{
-                                  fontSize: 10,
-                                  background: "var(--surface-elevated)",
-                                  border: "1px solid var(--border)",
-                                  borderRadius: 4,
-                                  padding: "2px 7px",
-                                  color: "var(--secondary)",
-                                }}
-                              >
-                                {t.trim()}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
-                No projects posted yet.
-              </div>
-            )}
-          </motion.section>
-
-          {/* Activity heatmap */}
-          <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              padding: 20,
-            }}
-          >
-            <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>
-              <Newspaper size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle", color: "var(--accent)" }} />
-              Contributions in the last year
-            </h2>
-            {/* Activity grid */}
-            <div style={{ display: "flex", gap: 3, overflowX: "auto", paddingBottom: 8 }}>
-              {Array.from({ length: 52 }).map((_, week) => (
-                <div key={week} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  {Array.from({ length: 7 }).map((_, day) => {
-                    const intensity = Math.random();
-                    return (
-                      <div
-                        key={day}
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: 2,
-                          background:
-                            intensity > 0.8
-                              ? "var(--accent)"
-                              : intensity > 0.6
-                              ? "rgba(37,99,235,0.5)"
-                              : intensity > 0.4
-                              ? "rgba(37,99,235,0.25)"
-                              : intensity > 0.2
-                              ? "rgba(37,99,235,0.1)"
-                              : "var(--border)",
-                        }}
-                      />
-                    );
-                  })}
+          {activeTab === "projects" ? (
+            <>
+              {/* Projects */}
+              <motion.section
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                style={{ marginBottom: 28 }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <h2 style={{ fontSize: 16, fontWeight: 700 }}>
+                    <FolderKanban size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle", color: "var(--accent)" }} />
+                    Projects
+                  </h2>
                 </div>
-              ))}
-            </div>
-          </motion.section>
+                {profile.projects && profile.projects.length > 0 ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+                    {profile.projects.map((proj: any, i: number) => {
+                      const colors = ["from-blue-500 to-violet-600", "from-emerald-500 to-teal-600", "from-orange-500 to-red-600"];
+                      const grad = colors[i % colors.length];
+                      return (
+                        <motion.div
+                          key={proj.id}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.35 + i * 0.08 }}
+                          className="card-hover"
+                          style={{
+                            background: "var(--surface)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "var(--radius-md)",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {/* Project banner */}
+                          <div
+                            style={{
+                              height: 80,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 24,
+                              fontWeight: 800,
+                              color: "rgba(255,255,255,0.6)",
+                              letterSpacing: "-0.02em",
+                            }}
+                            className={`bg-gradient-to-br ${grad}`}
+                          >
+                            {proj.title.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div style={{ padding: 14 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                              <h3 style={{ fontSize: 14, fontWeight: 700 }}>{proj.title}</h3>
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--muted)", fontSize: 12 }}>
+                                <Star size={12} fill="currentColor" />
+                                {proj._count?.likes || 0}
+                              </div>
+                            </div>
+                            <p style={{ fontSize: 12, color: "var(--secondary)", marginTop: 4, lineHeight: 1.5 }}>
+                              {proj.description}
+                            </p>
+                            {proj.techStack && (
+                              <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                                {proj.techStack.split(",").filter(Boolean).map((t: string) => (
+                                  <span
+                                    key={t}
+                                    style={{
+                                      fontSize: 10,
+                                      background: "var(--surface-elevated)",
+                                      border: "1px solid var(--border)",
+                                      borderRadius: 4,
+                                      padding: "2px 7px",
+                                      color: "var(--secondary)",
+                                    }}
+                                  >
+                                    {t.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
+                    No projects posted yet.
+                  </div>
+                )}
+              </motion.section>
+
+              {/* Activity heatmap */}
+              <motion.section
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-md)",
+                  padding: 20,
+                }}
+              >
+                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>
+                  <Newspaper size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle", color: "var(--accent)" }} />
+                  Contributions in the last year
+                </h2>
+                {/* Activity grid */}
+                <div style={{ display: "flex", gap: 3, overflowX: "auto", paddingBottom: 8 }}>
+                  {Array.from({ length: 52 }).map((_, week) => (
+                    <div key={week} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                      {Array.from({ length: 7 }).map((_, day) => {
+                        const intensity = Math.random();
+                        return (
+                          <div
+                            key={day}
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: 2,
+                              background:
+                                intensity > 0.8
+                                  ? "var(--accent)"
+                                  : intensity > 0.6
+                                  ? "rgba(37,99,235,0.5)"
+                                  : intensity > 0.4
+                                  ? "rgba(37,99,235,0.25)"
+                                  : intensity > 0.2
+                                  ? "rgba(37,99,235,0.1)"
+                                  : "var(--border)",
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </motion.section>
+            </>
+          ) : (
+            <motion.section
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{ display: "flex", flexDirection: "column", gap: 12 }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h2 style={{ fontSize: 16, fontWeight: 700 }}>
+                  <Newspaper size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle", color: "var(--accent)" }} />
+                  Recent Posts
+                </h2>
+              </div>
+              {profile.posts && profile.posts.length > 0 ? (
+                profile.posts.map((post: any) => (
+                  <ProfilePostCard key={post.id} post={post} />
+                ))
+              ) : (
+                <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "40px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
+                  No posts published yet.
+                </div>
+              )}
+            </motion.section>
+          )}
         </div>
 
         {/* Right column — Skills, Experience, Achievements */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Reddit-style About User Sidebar Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-md)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Banner style top */}
+            <div style={{
+              height: 48,
+              background: "linear-gradient(90deg, var(--accent) 0%, #7C3AED 100%)",
+            }} />
+            <div style={{ padding: "0 16px 16px 16px", marginTop: -24 }}>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginBottom: 8 }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "50%",
+                  border: "3px solid var(--background)",
+                  overflow: "hidden",
+                  background: "var(--surface)",
+                }}>
+                  {profile.avatarUrl ? (
+                    <img src={profile.avatarUrl} alt={profile.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: "white" }}>
+                      {profile.username.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div style={{ paddingBottom: 4 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, lineHeight: 1, color: "var(--primary)" }}>u/{profile.username}</p>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 14 }}>
+                <div>
+                  <p style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dev Karma</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
+                    <Star size={13} fill="currentColor" />
+                    {profile.level * 100 + (profile.streak || 0) * 10}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Cake Day</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "var(--secondary)", display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
+                    <CalendarDays size={13} />
+                    {joinDate.split(" ").slice(-2).join(" ") || "unknown"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
           {/* Skills */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
