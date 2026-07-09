@@ -350,3 +350,46 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response) => 
   }
 };
 
+export const getUserContributions = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const username = req.params.username as string;
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) throw createError('User not found', 404);
+
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    // Fetch dates of all projects, posts, comments, likes created by the user in the last year
+    const [projects, posts, comments, likes] = await Promise.all([
+      prisma.project.findMany({
+        where: { userId: user.id, createdAt: { gte: oneYearAgo } },
+        select: { createdAt: true },
+      }),
+      prisma.post.findMany({
+        where: { userId: user.id, createdAt: { gte: oneYearAgo } },
+        select: { createdAt: true },
+      }),
+      prisma.comment.findMany({
+        where: { userId: user.id, createdAt: { gte: oneYearAgo } },
+        select: { createdAt: true },
+      }),
+      prisma.like.findMany({
+        where: { userId: user.id, createdAt: { gte: oneYearAgo } },
+        select: { createdAt: true },
+      }),
+    ]);
+
+    // Combine all contribution dates
+    const dates = [
+      ...projects.map((p) => p.createdAt),
+      ...posts.map((p) => p.createdAt),
+      ...comments.map((c) => c.createdAt),
+      ...likes.map((l) => l.createdAt),
+    ];
+
+    res.json({ success: true, data: dates });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+};
+

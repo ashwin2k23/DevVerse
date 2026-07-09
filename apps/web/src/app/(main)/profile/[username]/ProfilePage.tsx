@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
@@ -207,6 +207,110 @@ export default function ProfilePage({ username }: ProfilePageProps) {
   const [togglingFollow, setTogglingFollow] = useState(false);
   const [activeTab, setActiveTab] = useState<"projects" | "posts">("projects");
 
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [contributions, setContributions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!username) return;
+    authApi.get(`/users/${username}/contributions`)
+      .then((res) => {
+        if (res.data?.success) {
+          setContributions(res.data.data || []);
+        }
+      })
+      .catch((err) => console.error("Error fetching contributions:", err));
+  }, [username]);
+
+  const contributionsMap = contributions.reduce((acc: Record<string, number>, dateStr: string) => {
+    const d = new Date(dateStr).toDateString();
+    acc[d] = (acc[d] || 0) + 1;
+    return acc;
+  }, {});
+
+  const getContributionCount = (week: number, day: number) => {
+    const today = new Date();
+    const cellDate = new Date();
+    const daysAgo = (51 - week) * 7 + (6 - day);
+    cellDate.setDate(today.getDate() - daysAgo);
+    const dateStr = cellDate.toDateString();
+    return contributionsMap[dateStr] || 0;
+  };
+
+  const handleCoverClick = () => {
+    coverInputRef.current?.click();
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploadRes = await authApi.post("/upload?folder=devverse/covers", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (uploadRes.data?.success && uploadRes.data?.url) {
+        const coverUrl = uploadRes.data.url;
+        const updateRes = await authApi.put("/users/me", { coverUrl });
+        if (updateRes.data?.success) {
+          setProfile((prev: any) => ({ ...prev, coverUrl }));
+        }
+      }
+    } catch (err) {
+      console.error("Cover upload failed:", err);
+      alert("Failed to upload cover image.");
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
+  const achievementsList = [
+    {
+      id: "first_commit",
+      icon: "💻",
+      title: "First Commit",
+      description: "Post your first project on DevVerse",
+      earned: (profile?.projects?.length || profile?._count?.projects || 0) > 0,
+    },
+    {
+      id: "prolific_writer",
+      icon: "✍️",
+      title: "Prolific Writer",
+      description: "Publish your first feed post",
+      earned: (profile?.posts?.length || profile?._count?.posts || 0) > 0,
+    },
+    {
+      id: "skill_collector",
+      icon: "📚",
+      title: "Skill Collector",
+      description: "Add 3 or more skills to your profile",
+      earned: (profile?.userSkills?.length || 0) >= 3,
+    },
+    {
+      id: "rising_star",
+      icon: "⭐",
+      title: "Rising Star",
+      description: "Gain your first follower on DevVerse",
+      earned: (profile?._count?.followers || 0) > 0,
+    },
+    {
+      id: "streak_master",
+      icon: "⚡",
+      title: "Streak Master",
+      description: "Maintain a daily login streak of at least 1 day",
+      earned: (profile?.streak || 0) > 0,
+    },
+    {
+      id: "networker",
+      icon: "🤝",
+      title: "Networker",
+      description: "Follow at least one other developer",
+      earned: (profile?._count?.following || 0) > 0,
+    },
+  ];
+
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -337,7 +441,11 @@ export default function ProfilePage({ username }: ProfilePageProps) {
         style={{
           height: 220,
           borderRadius: "var(--radius-lg)",
-          background: profile.coverUrl || "linear-gradient(135deg, #1e3a5f 0%, #2d1b69 50%, #0f1923 100%)",
+          background: profile.coverUrl
+            ? (profile.coverUrl.startsWith("http") || profile.coverUrl.startsWith("/")
+              ? `url(${profile.coverUrl}) center/cover no-repeat`
+              : profile.coverUrl)
+            : "linear-gradient(135deg, #1e3a5f 0%, #2d1b69 50%, #0f1923 100%)",
           position: "relative",
           overflow: "hidden",
           marginBottom: 0,
@@ -352,8 +460,9 @@ export default function ProfilePage({ username }: ProfilePageProps) {
           }}
         />
         {isMe && (
-          <Link
-            href="/edit-profile"
+          <button
+            onClick={handleCoverClick}
+            disabled={uploadingCover}
             style={{
               position: "absolute",
               top: 16,
@@ -369,13 +478,31 @@ export default function ProfilePage({ username }: ProfilePageProps) {
               alignItems: "center",
               gap: 6,
               backdropFilter: "blur(8px)",
-              textDecoration: "none",
+              cursor: uploadingCover ? "not-allowed" : "pointer",
+              transition: "background 150ms",
             }}
+            className="hover:bg-black/60"
           >
-            <Edit size={12} />
-            Edit cover
-          </Link>
+            {uploadingCover ? (
+              <>
+                <Loader2 size={12} className="animate-spin" style={{ color: "white" }} />
+                &nbsp;Uploading...
+              </>
+            ) : (
+              <>
+                <Edit size={12} />
+                Edit cover
+              </>
+            )}
+          </button>
         )}
+        <input
+          type="file"
+          ref={coverInputRef}
+          onChange={handleCoverUpload}
+          accept="image/*"
+          style={{ display: "none" }}
+        />
       </motion.div>
 
       {/* Profile info section */}
@@ -785,24 +912,29 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                   {Array.from({ length: 52 }).map((_, week) => (
                     <div key={week} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                       {Array.from({ length: 7 }).map((_, day) => {
-                        const intensity = Math.random();
+                        const count = getContributionCount(week, day);
+                        let bg = "var(--border)";
+                        if (count > 0) {
+                          if (count === 1) bg = "rgba(37,99,235,0.18)";
+                          else if (count === 2) bg = "rgba(37,99,235,0.45)";
+                          else if (count === 3) bg = "rgba(37,99,235,0.7)";
+                          else bg = "var(--accent)";
+                        }
+                        const cellDate = new Date();
+                        const daysAgo = (51 - week) * 7 + (6 - day);
+                        cellDate.setDate(cellDate.getDate() - daysAgo);
+                        const titleText = `${count} contribution${count !== 1 ? "s" : ""} on ${cellDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+
                         return (
                           <div
                             key={day}
+                            title={titleText}
                             style={{
                               width: 10,
                               height: 10,
                               borderRadius: 2,
-                              background:
-                                intensity > 0.8
-                                  ? "var(--accent)"
-                                  : intensity > 0.6
-                                  ? "rgba(37,99,235,0.5)"
-                                  : intensity > 0.4
-                                  ? "rgba(37,99,235,0.25)"
-                                  : intensity > 0.2
-                                  ? "rgba(37,99,235,0.1)"
-                                  : "var(--border)",
+                              background: bg,
+                              cursor: "pointer",
                             }}
                           />
                         );
@@ -1026,30 +1158,43 @@ export default function ProfilePage({ username }: ProfilePageProps) {
               <Award size={15} style={{ display: "inline", marginRight: 6, verticalAlign: "middle", color: "#F59E0B" }} />
               Achievements
             </h2>
-            {profile.achievements && profile.achievements.length > 0 ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-                {profile.achievements.map((ach: any, i: number) => (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+              {achievementsList.map((ach) => (
+                <div
+                  key={ach.id}
+                  title={ach.earned ? "Earned!" : "Locked"}
+                  style={{
+                    background: ach.earned ? "var(--background)" : "rgba(255,255,255,0.02)",
+                    border: ach.earned ? "1px solid rgba(16,185,129,0.3)" : "1px solid var(--border)",
+                    borderRadius: "var(--radius)",
+                    padding: 12,
+                    textAlign: "center",
+                    position: "relative",
+                    opacity: ach.earned ? 1 : 0.45,
+                    filter: ach.earned ? "none" : "grayscale(30%)",
+                    transition: "all 200ms",
+                  }}
+                >
+                  <div style={{ fontSize: 24, marginBottom: 6 }}>{ach.icon}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: ach.earned ? "var(--primary)" : "var(--secondary)" }}>
+                    {ach.title}
+                  </div>
+                  <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 4, lineHeight: 1.3 }}>
+                    {ach.description}
+                  </div>
                   <div
-                    key={i}
                     style={{
-                      background: "var(--background)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "var(--radius)",
-                      padding: 12,
-                      textAlign: "center",
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      fontSize: 10,
                     }}
                   >
-                    <div style={{ fontSize: 24, marginBottom: 6 }}>{ach.icon}</div>
-                    <div style={{ fontSize: 12, fontWeight: 600 }}>{ach.title}</div>
-                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{ach.description}</div>
+                    {ach.earned ? "✅" : "🔒"}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: "12px 0" }}>
-                No achievements earned yet.
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </motion.div>
         </div>
       </div>

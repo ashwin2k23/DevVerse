@@ -28,13 +28,16 @@ export default function EditProfilePage() {
   const [skills, setSkills] = useState<string[]>([]);
   const [customSkill, setCustomSkill] = useState("");
 
+  const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
+  const [fetchingLocation, setFetchingLocation] = useState(false);
+
   const localCurrentUsername =
     currentUser?.username ||
     currentUser?.emailAddresses?.[0]?.emailAddress?.split("@")?.[0] ||
     currentUser?.id;
 
   useEffect(() => {
-    if (!userLoaded || !currentUser) return;
+    if (!userLoaded || !currentUser || hasLoadedProfile) return;
 
     const fetchProfile = async () => {
       try {
@@ -50,6 +53,7 @@ export default function EditProfilePage() {
           setLocation(profileData.profile?.location || "");
           setWebsite(profileData.profile?.website || "");
           setSkills(profileData.userSkills?.map((us: any) => us.skill.name) || []);
+          setHasLoadedProfile(true);
         } else {
           setError("Failed to load profile data.");
         }
@@ -62,7 +66,7 @@ export default function EditProfilePage() {
     };
 
     fetchProfile();
-  }, [userLoaded, currentUser]);
+  }, [userLoaded, currentUser, hasLoadedProfile]);
 
   const handleAddSkill = () => {
     if (customSkill.trim() && !skills.includes(customSkill.trim())) {
@@ -73,6 +77,64 @@ export default function EditProfilePage() {
 
   const handleRemoveSkill = (skill: string) => {
     setSkills(skills.filter((s) => s !== skill));
+  };
+
+  const handleFetchLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setFetchingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`
+          );
+          const data = await response.json();
+          if (data && data.address) {
+            const address = data.address;
+            const city = address.city || address.town || address.village || address.suburb || "";
+            const state = address.state || "";
+            const country = address.country || "";
+
+            let resolvedLocation = "";
+            if (city) {
+              resolvedLocation = `${city}, ${state || country}`;
+            } else if (state) {
+              resolvedLocation = `${state}, ${country}`;
+            } else {
+              resolvedLocation = country;
+            }
+
+            if (resolvedLocation) {
+              setLocation(resolvedLocation);
+            } else {
+              alert("Location resolved, but details are empty.");
+            }
+          } else {
+            alert("Failed to resolve your coordinates to a location name.");
+          }
+        } catch (err) {
+          console.error("Reverse geocoding error:", err);
+          alert("Error fetching location details from reverse geocoding service.");
+        } finally {
+          setFetchingLocation(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        alert(
+          error.code === 1
+            ? "Location permission denied. Please allow location access."
+            : "Could not retrieve your location."
+        );
+        setFetchingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -302,23 +364,50 @@ export default function EditProfilePage() {
                 <MapPin size={12} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />
                 Location
               </label>
-              <input
-                id="edit-profile-location"
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. San Francisco, CA"
-                style={{
-                  width: "100%",
-                  padding: "9px 12px",
-                  background: "var(--background)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius)",
-                  fontSize: 13,
-                  color: "var(--primary)",
-                  outline: "none",
-                }}
-              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  id="edit-profile-location"
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. San Francisco, CA"
+                  style={{
+                    flex: 1,
+                    padding: "9px 12px",
+                    background: "var(--background)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius)",
+                    fontSize: 13,
+                    color: "var(--primary)",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleFetchLocation}
+                  disabled={fetchingLocation}
+                  style={{
+                    padding: "8px 12px",
+                    background: "var(--surface-elevated)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius)",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--primary)",
+                    cursor: fetchingLocation ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  {fetchingLocation ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <MapPin size={12} style={{ color: "var(--accent)" }} />
+                  )}
+                  {fetchingLocation ? "Locating..." : "Get GPS"}
+                </button>
+              </div>
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 6 }}>

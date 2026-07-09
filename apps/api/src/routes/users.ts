@@ -12,6 +12,7 @@ import {
   getTrendingDevelopers,
   getSuggestedDevelopers,
   getBookmarks,
+  getUserContributions,
 } from '../controllers/userController';
 
 const router: Router = Router();
@@ -22,6 +23,7 @@ router.get('/trending', optionalAuth, getTrendingDevelopers);
 router.get('/suggested', requireAuth, getSuggestedDevelopers);
 router.get('/me/bookmarks', requireAuth, getBookmarks);
 router.get('/:username', optionalAuth, getProfile);
+router.get('/:username/contributions', optionalAuth, getUserContributions);
 router.put('/me', requireAuth, updateProfile);
 router.get('/:username/followers', optionalAuth, getFollowers);
 router.get('/:username/following', optionalAuth, getFollowing);
