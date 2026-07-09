@@ -21,14 +21,13 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
 
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden">
-      {/* Dark overlay */}
-      <div className="absolute inset-0 z-10 bg-gradient-to-br from-black/70 via-black/50 to-purple-950/60" />
-      {/* Gradient fallback (shown when video hasn't loaded yet) */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900" />
-      {/* Video */}
+      {/* z-[0] — Gradient fallback (shows while video loads / if autoplay blocked) */}
+      <div className="absolute inset-0 z-[0] bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900" />
+
+      {/* z-[1] — Actual video, rendered above the gradient */}
       <video
         ref={videoRef}
-        className="absolute inset-0 min-w-full min-h-full object-cover w-auto h-auto"
+        className="absolute inset-0 z-[1] w-full h-full object-cover"
         autoPlay
         loop
         muted
@@ -37,9 +36,13 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
       >
         <source src={videoUrl} type="video/mp4" />
       </video>
+
+      {/* z-[2] — Semi-transparent dark overlay so text stays readable */}
+      <div className="absolute inset-0 z-[2] bg-black/50" />
     </div>
   );
 };
+
 
 // ─── Auth Shell — wraps any Clerk component in the gaming backdrop ─────────────
 interface AuthShellProps {
