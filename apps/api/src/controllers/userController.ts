@@ -269,9 +269,9 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
         ...userSelect,
         profile: true,
         socialLinks: { select: { platform: true, url: true } },
-        followers: currentUser
-          ? { where: { followerId: currentUser.id }, select: { status: true } }
-          : false,
+        ...(currentUser && {
+          followers: { where: { followerId: currentUser.id }, select: { status: true } },
+        }),
       },
       skip,
       take: Number(limit),
@@ -343,6 +343,14 @@ export const followUser = async (req: AuthenticatedRequest, res: Response) => {
     const currentUser = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
     if (!currentUser) throw createError('User not found', 404);
     if (currentUser.id === userId) throw createError('Cannot follow yourself', 400);
+
+    // Check if relationship already exists
+    const existing = await prisma.follower.findUnique({
+      where: { followerId_followingId: { followerId: currentUser.id, followingId: userId } },
+    });
+    if (existing) {
+      return res.json({ success: true, message: 'Follow status unchanged', followStatus: existing.status });
+    }
 
     // Create follow request as PENDING
     await prisma.follower.create({
