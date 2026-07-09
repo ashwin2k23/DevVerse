@@ -23,9 +23,24 @@ const router: Router = Router();
 
 router.get('/diagnostic', async (req, res) => {
   try {
+    const tursoUrl = process.env.TURSO_DATABASE_URL;
+    const tursoToken = process.env.TURSO_AUTH_TOKEN;
+    let migrationResult = "Not attempted (no credentials)";
+    
+    if (tursoUrl && tursoToken) {
+      const { createClient } = require('@libsql/client');
+      const client = createClient({ url: tursoUrl, authToken: tursoToken });
+      try {
+        await client.execute(`ALTER TABLE followers ADD COLUMN status TEXT NOT NULL DEFAULT 'PENDING'`);
+        migrationResult = "Success";
+      } catch (err: any) {
+        migrationResult = `Failed: ${err.message}`;
+      }
+    }
+    
     const columns = await prisma.$queryRawUnsafe(`PRAGMA table_info(followers)`);
     const serialized = JSON.parse(JSON.stringify(columns, (key, value) => typeof value === 'bigint' ? value.toString() : value));
-    res.json({ success: true, columns: serialized });
+    res.json({ success: true, migrationResult, columns: serialized });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
