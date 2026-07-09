@@ -118,6 +118,36 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
     const user = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
     if (!user) throw createError('User not found', 404);
 
+    // Update skills if provided
+    if (skills && Array.isArray(skills)) {
+      // 1. Delete existing user skills
+      await prisma.userSkill.deleteMany({
+        where: { userId: user.id },
+      });
+
+      // 2. Add new user skills
+      for (const skillName of skills) {
+        if (!skillName || !skillName.trim()) continue;
+        let skill = await prisma.skill.findUnique({
+          where: { name: skillName.trim() },
+        });
+
+        if (!skill) {
+          skill = await prisma.skill.create({
+            data: { name: skillName.trim(), category: 'General' },
+          });
+        }
+
+        await prisma.userSkill.create({
+          data: {
+            userId: user.id,
+            skillId: skill.id,
+            proficiency: 'INTERMEDIATE',
+          },
+        });
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {

@@ -9,7 +9,7 @@ import { useApiClient } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface ChatUser { id: string; username: string; avatarUrl: string | null; }
+interface ChatUser { id: string; username: string; avatarUrl: string | null; clerkId?: string; }
 interface Message { id: string; conversationId: string; senderId: string; content: string; createdAt: string; sender: ChatUser; }
 interface Conversation {
   id: string;
@@ -228,7 +228,7 @@ export default function MessagesPage() {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
   const getOtherParticipant = useCallback((conv: Conversation) =>
-    conv.participants.find((p) => p.user.id !== user?.id)?.user || conv.participants[0]?.user,
+    conv.participants.find((p) => p.user.clerkId !== user?.id)?.user || conv.participants[0]?.user,
     [user]);
 
   const activeConv = conversations.find((c) => c.id === activeConvId);

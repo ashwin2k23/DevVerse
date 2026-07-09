@@ -1026,24 +1026,30 @@ export default function ProfilePage({ username }: ProfilePageProps) {
               <Award size={15} style={{ display: "inline", marginRight: 6, verticalAlign: "middle", color: "#F59E0B" }} />
               Achievements
             </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-              {(profile.achievements && profile.achievements.length > 0 ? profile.achievements : defaultAchievements).map((ach: any, i: number) => (
-                <div
-                  key={i}
-                  style={{
-                    background: "var(--background)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius)",
-                    padding: 12,
-                    textAlign: "center",
-                  }}
-                >
-                  <div style={{ fontSize: 24, marginBottom: 6 }}>{ach.icon}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600 }}>{ach.title}</div>
-                  <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{ach.description}</div>
-                </div>
-              ))}
-            </div>
+            {profile.achievements && profile.achievements.length > 0 ? (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+                {profile.achievements.map((ach: any, i: number) => (
+                  <div
+                    key={i}
+                    style={{
+                      background: "var(--background)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius)",
+                      padding: 12,
+                      textAlign: "center",
+                    }}
+                  >
+                    <div style={{ fontSize: 24, marginBottom: 6 }}>{ach.icon}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>{ach.title}</div>
+                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{ach.description}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: "12px 0" }}>
+                No achievements earned yet.
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
