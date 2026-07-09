@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Github, Twitter, Linkedin } from "@/components/shared/BrandIcons";
 import { useApiClient } from "@/lib/api";
+import ExpLevelCard from "@/components/ui/exp-level-card";
 
 interface ProfilePageProps {
   username: string;
@@ -1047,6 +1048,34 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                     {joinDate.split(" ").slice(-2).join(" ") || "unknown"}
                   </p>
                 </div>
+              </div>
+
+              {/* Interactive EXP & Level Progression Card */}
+              <div style={{ marginTop: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, paddingTop: 14, borderTop: "1px solid var(--border-subtle)" }}>
+                <p style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", alignSelf: "flex-start" }}>
+                  Level Progress
+                </p>
+                <ExpLevelCard
+                  initialLevel={profile.level}
+                  initialExp={35} // start at a fun placeholder value
+                  expIncrement={50}
+                  baseColorClass="from-blue-600 to-indigo-900"
+                  highlightColorClass="border-indigo-400"
+                  interactive={isMe}
+                  onLevelUp={async (newLevel) => {
+                    setProfile((prev: any) => ({ ...prev, level: newLevel }));
+                    try {
+                      await authApi.put("/users/me", { level: newLevel });
+                    } catch (err) {
+                      console.error("Failed to sync level with server:", err);
+                    }
+                  }}
+                />
+                {isMe && (
+                  <p style={{ fontSize: 10, color: "var(--muted)", fontStyle: "italic", textAlign: "center", marginTop: 4 }}>
+                    Click the card to gain EXP & level up!
+                  </p>
+                )}
               </div>
             </div>
           </motion.div>
