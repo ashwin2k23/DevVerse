@@ -12,11 +12,36 @@ export const VideoBackground: React.FC<VideoBackgroundProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => {
-        // Autoplay blocked — video stays paused, gradient fallback visible
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Programmatically ensure muted is true (React attribute bypass check)
+    video.muted = true;
+
+    const playVideo = () => {
+      video.play().catch((err) => {
+        console.warn("Autoplay blocked or failed, waiting for user interaction:", err);
       });
-    }
+    };
+
+    playVideo();
+
+    // Fallback: Play when user interacts with the page (clicks anywhere)
+    const handleInteraction = () => {
+      if (video.paused) {
+        video.play().catch(() => {});
+      }
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+    };
+
+    window.addEventListener('click', handleInteraction);
+    window.addEventListener('touchstart', handleInteraction);
+
+    return () => {
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+    };
   }, []);
 
   return (
