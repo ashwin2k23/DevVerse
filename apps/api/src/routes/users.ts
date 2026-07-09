@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { prisma } from '../lib/prisma';
 import { requireAuth, optionalAuth } from '../middleware/auth';
 import {
   getProfile,
@@ -19,6 +20,15 @@ import {
 } from '../controllers/userController';
 
 const router: Router = Router();
+
+router.get('/diagnostic', async (req, res) => {
+  try {
+    const columns = await prisma.$queryRawUnsafe(`PRAGMA table_info(followers)`);
+    res.json({ success: true, columns });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 router.post('/sync', requireAuth, syncUser);
 router.get('/search', optionalAuth, searchUsers);
