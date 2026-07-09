@@ -50,9 +50,31 @@ const formatPeriod = (start: string, end: string | null, current: boolean) => {
 const getSocialIcon = (platform: string) => {
   const lower = platform.toLowerCase();
   if (lower.includes("github")) return Github;
-  if (lower.includes("twitter")) return Twitter;
+  if (lower.includes("twitter") || lower.includes("x.com")) return Twitter;
   if (lower.includes("linkedin")) return Linkedin;
+  // Instagram and Threads use inline SVG icons below — return a generic icon as fallback
   return Mail;
+};
+
+// Returns inline SVG for social platforms not in lucide
+const SocialIconSVG = ({ platform }: { platform: string }) => {
+  const lower = platform.toLowerCase();
+  if (lower.includes("instagram")) {
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+      </svg>
+    );
+  }
+  if (lower.includes("threads")) {
+    return (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.267-.879-2.239-.884h-.06c-.744 0-1.95.204-2.679 1.328l-1.752-1.138c.979-1.521 2.487-2.357 4.348-2.357h.084c3.118.028 4.977 1.96 5.147 5.392.083.028.165.057.249.086 1.316.47 2.272 1.234 2.844 2.271.95 1.708.982 4.088-.169 6.332C18.944 22.695 16.559 23.98 12.186 24z"/>
+      </svg>
+    );
+  }
+  // Fallback: GitHub, Twitter, LinkedIn handled by parent via getSocialIcon
+  return null;
 };
 
 // Default achievements if database has none yet
@@ -721,14 +743,20 @@ export default function ProfilePage({ username }: ProfilePageProps) {
           {profile.socialLinks && profile.socialLinks.length > 0 && (
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
               {profile.socialLinks.map((link: any, idx: number) => {
-                const Icon = getSocialIcon(link.platform);
+                const lower = link.platform?.toLowerCase() || "";
+                const isInstagram = lower.includes("instagram");
+                const isThreads   = lower.includes("threads");
+                const useInlineSvg = isInstagram || isThreads;
+                const Icon = useInlineSvg ? null : getSocialIcon(link.platform);
+                const inlineSvg = useInlineSvg ? <SocialIconSVG platform={link.platform} /> : null;
                 return (
                   <a
                     key={idx}
-                    href={link.url}
+                    href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={link.platform}
+                    title={link.platform}
                     style={{
                       width: 32,
                       height: 32,
@@ -740,10 +768,11 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                       justifyContent: "center",
                       color: "var(--secondary)",
                       transition: "color 150ms, border-color 150ms",
+                      textDecoration: "none",
                     }}
                     className="hover:text-accent hover:border-accent/40"
                   >
-                    <Icon size={15} />
+                    {useInlineSvg ? inlineSvg : Icon ? <Icon size={15} /> : null}
                   </a>
                 );
               })}
@@ -1049,7 +1078,12 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                   <p style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dev Karma</p>
                   <p style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
                     <Star size={13} fill="currentColor" />
-                    {profile.level * 100 + (profile.streak || 0) * 10}
+                    {(
+                      (profile?._count?.posts || 0) * 15 +
+                      (profile?._count?.projects || 0) * 30 +
+                      (profile?.streak || 0) * 10 +
+                      (profile?.level || 1) * 50
+                    )}
                   </p>
                 </div>
                 <div>
@@ -1061,33 +1095,27 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                 </div>
               </div>
 
-              {/* Interactive EXP & Level Progression Card */}
-              <div style={{ marginTop: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, paddingTop: 14, borderTop: "1px solid var(--border-subtle)" }}>
-                <p style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", alignSelf: "flex-start" }}>
-                  Level Progress
-                </p>
-                <ExpLevelCard
-                  initialLevel={profile.level}
-                  initialExp={35} // start at a fun placeholder value
-                  expIncrement={50}
-                  baseColorClass="from-blue-600 to-indigo-900"
-                  highlightColorClass="border-indigo-400"
-                  interactive={isMe}
-                  onLevelUp={async (newLevel) => {
-                    setProfile((prev: any) => ({ ...prev, level: newLevel }));
-                    try {
-                      await authApi.put("/users/me", { level: newLevel });
-                    } catch (err) {
-                      console.error("Failed to sync level with server:", err);
-                    }
-                  }}
-                />
-                {isMe && (
-                  <p style={{ fontSize: 10, color: "var(--muted)", fontStyle: "italic", textAlign: "center", marginTop: 4 }}>
-                    Click the card to gain EXP & level up!
-                  </p>
-                )}
-              </div>
+              {/* Static EXP & Level Progression Card */}
+              {(() => {
+                const postsCount    = profile?._count?.posts    || profile?.posts?.length    || 0;
+                const projectsCount = profile?._count?.projects || profile?.projects?.length || 0;
+                const streakDays    = profile?.streak || 0;
+                const currentLevel  = profile?.level  || 1;
+                // Compute total EXP from real contribution data
+                const totalExp = postsCount * 15 + projectsCount * 30 + streakDays * 10;
+                return (
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border-subtle)" }}>
+                    <p style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
+                      Level Progress
+                    </p>
+                    <ExpLevelCard
+                      level={currentLevel}
+                      totalExp={totalExp}
+                      expIncrement={50}
+                    />
+                  </div>
+                );
+              })()}
             </div>
           </motion.div>
           {/* Skills */}

@@ -29,6 +29,13 @@ export default function EditProfilePage() {
   const [customSkill, setCustomSkill] = useState("");
   const [savedUsername, setSavedUsername] = useState("");
 
+  // Social links
+  const [instagram, setInstagram] = useState("");
+  const [twitterLink, setTwitterLink] = useState("");
+  const [threads, setThreads] = useState("");
+  const [githubLink, setGithubLink] = useState("");
+  const [linkedinLink, setLinkedinLink] = useState("");
+
   const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
   const [fetchingLocation, setFetchingLocation] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -54,6 +61,15 @@ export default function EditProfilePage() {
           setLocation(profileData.profile?.location || "");
           setWebsite(profileData.profile?.website || "");
           setSkills(profileData.userSkills?.map((us: any) => us.skill.name) || []);
+          // Populate social links
+          const socials: any[] = profileData.socialLinks || [];
+          const findUrl = (platform: string) =>
+            socials.find((s: any) => s.platform?.toLowerCase().includes(platform))?.url || "";
+          setInstagram(findUrl("instagram"));
+          setTwitterLink(findUrl("twitter"));
+          setThreads(findUrl("threads"));
+          setGithubLink(findUrl("github"));
+          setLinkedinLink(findUrl("linkedin"));
           setHasLoadedProfile(true);
         } else {
           setError("Failed to load profile data.");
@@ -152,6 +168,13 @@ export default function EditProfilePage() {
     setSaving(true);
     setError(null);
     try {
+      const socialLinks: { platform: string; url: string }[] = [];
+      if (instagram.trim())    socialLinks.push({ platform: "Instagram",  url: instagram.trim() });
+      if (twitterLink.trim())  socialLinks.push({ platform: "Twitter",    url: twitterLink.trim() });
+      if (threads.trim())      socialLinks.push({ platform: "Threads",    url: threads.trim() });
+      if (githubLink.trim())   socialLinks.push({ platform: "GitHub",     url: githubLink.trim() });
+      if (linkedinLink.trim()) socialLinks.push({ platform: "LinkedIn",   url: linkedinLink.trim() });
+
       const res = await authApi.put("/users/me", {
         username: usernameState.trim(),
         bio,
@@ -161,6 +184,7 @@ export default function EditProfilePage() {
         avatarUrl,
         coverUrl,
         skills,
+        socialLinks,
       });
 
       if (res.data?.success) {
@@ -443,6 +467,40 @@ export default function EditProfilePage() {
               Add
             </button>
           </div>
+        </motion.div>
+
+        {/* Social Links */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 20, display: "flex", flexDirection: "column", gap: 14 }}
+        >
+          <h2 style={{ fontSize: 14, fontWeight: 600, borderBottom: "1px solid var(--border)", paddingBottom: 8, marginBottom: 4 }}>Social Links</h2>
+          <p style={{ fontSize: 12, color: "var(--muted)", marginTop: -8 }}>Add your social profiles. They'll appear as clickable icons on your public profile.</p>
+
+          {[
+            { id: "edit-instagram", label: "Instagram", placeholder: "https://instagram.com/yourhandle", value: instagram, onChange: setInstagram },
+            { id: "edit-twitter",   label: "Twitter / X", placeholder: "https://x.com/yourhandle", value: twitterLink, onChange: setTwitterLink },
+            { id: "edit-threads",   label: "Threads",   placeholder: "https://threads.net/@yourhandle", value: threads,     onChange: setThreads },
+            { id: "edit-github",    label: "GitHub",    placeholder: "https://github.com/yourusername", value: githubLink,  onChange: setGithubLink },
+            { id: "edit-linkedin",  label: "LinkedIn",  placeholder: "https://linkedin.com/in/yourprofile", value: linkedinLink, onChange: setLinkedinLink },
+          ].map(({ id, label, placeholder, value, onChange }) => (
+            <div key={id}>
+              <label style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 6 }}>{label}</label>
+              <input
+                id={id}
+                type="url"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                style={{
+                  width: "100%", padding: "9px 12px",
+                  background: "var(--background)", border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)", fontSize: 13, color: "var(--primary)", outline: "none",
+                }}
+              />
+            </div>
+          ))}
         </motion.div>
 
         {/* Action Buttons */}

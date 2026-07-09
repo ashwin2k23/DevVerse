@@ -362,4 +362,45 @@ code {
   }
 }
 
+/* ─── Auth Page (Gaming Shell) ─────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
+/* Force Clerk card transparent inside our glass shell */
+.cl-card,
+.cl-rootBox,
+.cl-signIn-root,
+.cl-signUp-root {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.cl-formFieldInput {
+  background: rgba(255,255,255,0.07) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: white !important;
+  border-radius: 10px !important;
+}
+.cl-formFieldInput::placeholder {
+  color: rgba(255,255,255,0.4) !important;
+}
+.cl-formButtonPrimary {
+  background: linear-gradient(135deg,#3b82f6,#7c3aed) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.35) !important;
+}
+.cl-headerTitle, .cl-formFieldLabel { color: white !important; }
+.cl-headerSubtitle, .cl-footerActionText { color: rgba(255,255,255,0.55) !important; }
+.cl-footerActionLink { color: #818cf8 !important; }
+.cl-dividerLine { background: rgba(255,255,255,0.12) !important; }
+.cl-dividerText { color: rgba(255,255,255,0.4) !important; }
+.cl-socialButtonsBlockButton {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  color: white !important;
+  border-radius: 10px !important;
+}
+.cl-socialButtonsBlockButtonText { color: white !important; }

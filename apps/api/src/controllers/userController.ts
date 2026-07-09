@@ -176,6 +176,37 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
         });
       }
     }
+    // Update social links if provided
+    if (socialLinks) {
+      // Normalize to array of {platform, url} regardless of incoming format
+      let linksArray: { platform: string; url: string }[] = [];
+
+      if (Array.isArray(socialLinks)) {
+        // New format: [{platform: "Instagram", url: "https://..."}]
+        linksArray = socialLinks.filter((l: any) => l?.platform && l?.url);
+      } else if (typeof socialLinks === 'object') {
+        // Legacy format: {Instagram: "https://..."}
+        linksArray = Object.entries(socialLinks)
+          .filter(([, url]) => url)
+          .map(([platform, url]) => ({ platform, url: url as string }));
+      }
+
+      // Delete ALL existing social links, then recreate (clean slate)
+      await prisma.socialLink.deleteMany({ where: { userId: user.id } });
+
+      for (const link of linksArray) {
+        const urlTrimmed = link.url?.trim();
+        if (!urlTrimmed) continue;
+        const platformKey = link.platform.toLowerCase().replace(/\s+/g, '_');
+        await prisma.socialLink.create({
+          data: {
+            userId: user.id,
+            platform: platformKey,       // normalized key for DB unique constraint
+            url: urlTrimmed,
+          }
+        });
+      }
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
