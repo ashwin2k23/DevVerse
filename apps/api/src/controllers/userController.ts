@@ -111,6 +111,35 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
   }
 };
 
+export const getCurrentUserProfile = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { clerkId: req.clerkId },
+      include: {
+        profile: true,
+        socialLinks: true,
+        userSkills: { include: { skill: true } },
+        experience: { orderBy: { startDate: 'desc' } },
+        education: { orderBy: { startYear: 'desc' } },
+        achievements: { orderBy: { earnedAt: 'desc' } },
+        projects: {
+          orderBy: { createdAt: 'desc' },
+          take: 6,
+          include: { _count: { select: { likes: true, comments: true } } },
+        },
+        _count: {
+          select: { followers: true, following: true, projects: true, posts: true },
+        },
+      },
+    });
+
+    if (!user) throw createError('User not found', 404);
+    res.json({ success: true, data: { ...user, isFollowing: false } });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+};
+
 export const updateProfile = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { username, bio, avatarUrl, coverUrl, headline, location, website, resumeUrl, socialLinks, skills } = req.body;

@@ -86,7 +86,7 @@ export default function Sidebar() {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 4,
+          gap: 2,
           overflowX: "auto",
           width: "100%",
           paddingBottom: 2,
@@ -105,10 +105,10 @@ export default function Sidebar() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
-                padding: "8px 16px",
+                gap: 6,
+                padding: "7px 10px",
                 borderRadius: "var(--radius-lg)",
-                fontSize: 13.5,
+                fontSize: 13,
                 fontWeight: isActive ? 600 : 500,
                 color: isActive ? "var(--accent)" : "var(--secondary)",
                 transition: "color 150ms",
