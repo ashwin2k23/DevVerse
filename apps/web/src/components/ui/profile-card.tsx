@@ -52,25 +52,29 @@ interface ProfileCardProps {
   likes?: number
   posts?: number
   views?: number
+  level?: number
   instagramUrl?: string
   twitterUrl?: string
   threadsUrl?: string
+  followStatus?: 'NONE' | 'PENDING' | 'ACCEPTED'
   isFollowing?: boolean
   onFollowToggle?: (e: React.MouseEvent) => void
   profileUrl?: string
 }
 
 export function ProfileCard({
-  name = "Bhomik Chauhan",
-  title = "Product Designer who focuses on simplicity & usability.",
-  avatarUrl = "https://i.ibb.co/Kc3MTRNm/caarton-character.png",
-  backgroundUrl = "https://i.ibb.co/nHk8jc8/cloud-image.jpg",
-  likes = 72900,
-  posts = 828,
-  views = 342900,
-  instagramUrl = "https://instagram.com/bhomikchauhan",
-  twitterUrl = "https://twitter.com/bhomikchauhan",
-  threadsUrl = "https://threads.net/@bhomikchauhan",
+  name = "Developer",
+  title = "Product Builder & Developer",
+  avatarUrl,
+  backgroundUrl,
+  likes = 0,
+  posts = 0,
+  views = 0,
+  level = 1,
+  instagramUrl,
+  twitterUrl,
+  threadsUrl,
+  followStatus = 'NONE',
   isFollowing = false,
   onFollowToggle,
   profileUrl,
@@ -80,14 +84,17 @@ export function ProfileCard({
   const [animatedViews, setAnimatedViews] = useState(0)
   const [expProgress, setExpProgress] = useState(0)
 
-  // Animate experience bar
+  // Real level-based EXP: progress within current tier of 10 levels
+  const targetExp = Math.min(((level - 1) % 10) * 10 + 10, 100)
+
+  // Animate experience bar toward real target
   useEffect(() => {
     const timer = setTimeout(() => {
       const interval = setInterval(() => {
         setExpProgress((prev) => {
-          if (prev >= 65) {
+          if (prev >= targetExp) {
             clearInterval(interval)
-            return 65
+            return targetExp
           }
           return prev + 1
         })
@@ -95,7 +102,7 @@ export function ProfileCard({
       return () => clearInterval(interval)
     }, 200)
     return () => clearTimeout(timer)
-  }, [])
+  }, [targetExp])
 
   // Animate counters
   useEffect(() => {
@@ -142,6 +149,12 @@ export function ProfileCard({
     }
   }
 
+  // Determine button state from followStatus (preferred) or isFollowing fallback
+  const effectiveStatus = followStatus !== 'NONE' ? followStatus : (isFollowing ? 'ACCEPTED' : 'NONE')
+  const followLabel = effectiveStatus === 'ACCEPTED' ? 'Following' : effectiveStatus === 'PENDING' ? 'Requested' : 'Follow'
+  const followSymbol = effectiveStatus === 'ACCEPTED' ? '✓' : effectiveStatus === 'PENDING' ? '…' : '+'
+  const isActive = effectiveStatus !== 'NONE'
+
   const CardWrapper = ({ children }: { children: React.ReactNode }) => {
     if (profileUrl) {
       return (
@@ -171,13 +184,13 @@ export function ProfileCard({
             onClick={handleFollowClick}
             type="button"
             className={`absolute top-4 right-4 rounded-full px-4 py-1.5 text-xs font-semibold shadow-md transition-all duration-300 z-10 ${
-              isFollowing
+              isActive
                 ? "bg-surface-elevated text-secondary border border-border hover:bg-surface"
                 : "bg-accent text-white hover:bg-accent-hover"
             }`}
           >
-            {isFollowing ? "Following" : "Follow"}
-            <span className="ml-1 text-sm">{isFollowing ? "✓" : "+"}</span>
+            {followLabel}
+            <span className="ml-1 text-sm">{followSymbol}</span>
           </button>
         </div>
 
@@ -199,7 +212,7 @@ export function ProfileCard({
           {/* Experience bar */}
           <div className="mb-4 flex-shrink-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">exp.</span>
+              <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Lv.{level}</span>
               <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-purple-500 via-pink-500 via-orange-500 via-yellow-500 via-green-500 to-blue-500 transition-all duration-300 ease-out"

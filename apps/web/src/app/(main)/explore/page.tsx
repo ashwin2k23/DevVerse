@@ -29,14 +29,21 @@ export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [developers, setDevelopers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [followed, setFollowed] = useState<Set<string>>(new Set());
+  const [followStatuses, setFollowStatuses] = useState<Record<string, 'NONE' | 'PENDING' | 'ACCEPTED'>>({});
 
   const searchDevs = useCallback(async (q = "") => {
     setLoading(true);
     try {
       const res = await authApi.get(`/users/search?q=${q}&limit=24`);
       if (res.data?.success) {
-        setDevelopers(res.data.data || []);
+        const devs = res.data.data || [];
+        setDevelopers(devs);
+        // Initialize follow statuses from API response
+        const statuses: Record<string, 'NONE' | 'PENDING' | 'ACCEPTED'> = {};
+        devs.forEach((d: any) => {
+          statuses[d.id] = d.followStatus || 'NONE';
+        });
+        setFollowStatuses(statuses);
       }
     } catch (err) {
       console.error(err);
@@ -53,14 +60,26 @@ export default function ExplorePage() {
   }, [searchQuery, searchDevs]);
 
   const toggleFollow = async (e: React.MouseEvent, dev: any) => {
-    e.preventDefault(); // Prevent navigating to profile page
+    e.preventDefault();
     e.stopPropagation();
-    const isFollowing = followed.has(dev.id);
-    setFollowed((prev) => { const n = new Set(prev); isFollowing ? n.delete(dev.id) : n.add(dev.id); return n; });
-    try {
-      if (isFollowing) await authApi.delete(`/users/${dev.id}/follow`);
-      else await authApi.post(`/users/${dev.id}/follow`);
-    } catch { setFollowed((prev) => { const n = new Set(prev); isFollowing ? n.add(dev.id) : n.delete(dev.id); return n; }); }
+    const current = followStatuses[dev.id] || 'NONE';
+    if (current === 'NONE') {
+      // Send follow request → PENDING
+      setFollowStatuses((prev) => ({ ...prev, [dev.id]: 'PENDING' }));
+      try {
+        await authApi.post(`/users/${dev.id}/follow`);
+      } catch {
+        setFollowStatuses((prev) => ({ ...prev, [dev.id]: 'NONE' }));
+      }
+    } else {
+      // Cancel request or unfollow → NONE
+      setFollowStatuses((prev) => ({ ...prev, [dev.id]: 'NONE' }));
+      try {
+        await authApi.delete(`/users/${dev.id}/follow`);
+      } catch {
+        setFollowStatuses((prev) => ({ ...prev, [dev.id]: current }));
+      }
+    }
   };
 
   return (
@@ -162,12 +181,9 @@ export default function ExplorePage() {
             className={view === "grid" ? "explore-grid" : ""}
           >
             {developers.map((dev, i) => {
-              const instagramLink = dev.socialLinks?.find((s: any) => s.platform.toLowerCase() === "instagram")?.url || `https://instagram.com/${dev.username}`;
-              const twitterLink = dev.socialLinks?.find((s: any) => s.platform.toLowerCase() === "twitter")?.url || `https://twitter.com/${dev.username}`;
-              const threadsLink = dev.socialLinks?.find((s: any) => s.platform.toLowerCase() === "threads")?.url || `https://threads.net/@${dev.username}`;
-
-              if (view === "grid") {
+            if (view === "grid") {
                 return (
+
                   <motion.div
                     key={dev.id}
                     initial={{ opacity: 0, y: 12 }}
@@ -182,10 +198,11 @@ export default function ExplorePage() {
                       likes={dev._count?.followers || 0}
                       posts={dev._count?.projects || 0}
                       views={dev.level * 100 + (dev.streak || 0) * 10}
-                      instagramUrl={instagramLink}
-                      twitterUrl={twitterLink}
-                      threadsUrl={threadsLink}
-                      isFollowing={followed.has(dev.id)}
+                      level={dev.level || 1}
+                      instagramUrl={dev.socialLinks?.find((s: any) => s.platform.toLowerCase() === 'instagram')?.url}
+                      twitterUrl={dev.socialLinks?.find((s: any) => s.platform.toLowerCase() === 'twitter')?.url}
+                      threadsUrl={dev.socialLinks?.find((s: any) => s.platform.toLowerCase() === 'threads')?.url}
+                      followStatus={followStatuses[dev.id] || 'NONE'}
                       onFollowToggle={(e) => toggleFollow(e, dev)}
                       profileUrl={`/profile/${dev.username}`}
                     />
@@ -238,10 +255,10 @@ export default function ExplorePage() {
                         </div>
                         <button
                           onClick={(e) => toggleFollow(e, dev)}
-                          style={{ padding: "6px 14px", borderRadius: "var(--radius-full)", background: followed.has(dev.id) ? "var(--border)" : "var(--accent)", border: "none", color: followed.has(dev.id) ? "var(--secondary)" : "white", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "opacity 150ms" }}
+                          style={{ padding: "6px 14px", borderRadius: "var(--radius-full)", background: (followStatuses[dev.id] && followStatuses[dev.id] !== 'NONE') ? "var(--border)" : "var(--accent)", border: "none", color: (followStatuses[dev.id] && followStatuses[dev.id] !== 'NONE') ? "var(--secondary)" : "white", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "opacity 150ms" }}
                           className="hover:opacity-85"
                         >
-                          {followed.has(dev.id) ? "Following" : "Follow"}
+                          {followStatuses[dev.id] === 'ACCEPTED' ? 'Following' : followStatuses[dev.id] === 'PENDING' ? 'Requested' : 'Follow'}
                         </button>
                       </div>
                     </div>
@@ -259,6 +276,11 @@ export default function ExplorePage() {
         }
         @media (max-width: 600px) {
           .explore-grid { grid-template-columns: 1fr !important; }
+        }
+        /* Mobile layout fixes */
+        @media (max-width: 640px) {
+          h1 { font-size: 20px !important; }
+          .explore-search-bar { flex-direction: column; }
         }
       `}</style>
     </div>

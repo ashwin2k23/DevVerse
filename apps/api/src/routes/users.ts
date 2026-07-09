@@ -8,6 +8,8 @@ import {
   getFollowing,
   followUser,
   unfollowUser,
+  acceptFollowRequest,
+  declineFollowRequest,
   searchUsers,
   syncUser,
   getTrendingDevelopers,
@@ -31,5 +33,8 @@ router.get('/:username/followers', optionalAuth, getFollowers);
 router.get('/:username/following', optionalAuth, getFollowing);
 router.post('/:userId/follow', requireAuth, followUser);
 router.delete('/:userId/follow', requireAuth, unfollowUser);
+router.put('/:userId/follow/accept', requireAuth, acceptFollowRequest);
+router.delete('/:userId/follow/decline', requireAuth, declineFollowRequest);
 
 export default router;
+

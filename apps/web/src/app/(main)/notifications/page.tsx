@@ -2,15 +2,16 @@
 
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Heart, MessageSquare, UserPlus, Star, Award, Trash2, Check, Bell, Loader2 } from "lucide-react";
+import { Heart, UserPlus, MessageSquare, Star, Award, Trash2, Check, Bell, Loader2 } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
 import { useApiClient } from "@/lib/api";
 
 const iconMap: Record<string, any> = {
   LIKE: { icon: Heart, color: "#EF4444", bg: "rgba(239,68,68,0.1)" },
   FOLLOW: { icon: UserPlus, color: "#2563EB", bg: "rgba(37,99,235,0.1)" },
+  FOLLOW_REQUEST: { icon: UserPlus, color: "#F59E0B", bg: "rgba(245,158,11,0.1)" },
   COMMENT: { icon: MessageSquare, color: "#10B981", bg: "rgba(16,185,129,0.1)" },
-  PROJECT_APPRECIATION: { icon: Star, color: "#F59E0B", bg: "rgba(245,158,11,0.1)" },
+project_appreciation: { icon: Star, color: "#F59E0B", bg: "rgba(245,158,11,0.1)" },
   ACHIEVEMENT: { icon: Award, color: "#7C3AED", bg: "rgba(124,58,237,0.1)" },
 };
 
@@ -18,6 +19,7 @@ export default function NotificationsPage() {
   const authApi = useApiClient();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processedRequests, setProcessedRequests] = useState<Record<string, 'ACCEPTED' | 'DECLINED'>>({});
 
   const fetchNotifications = async () => {
     try {
@@ -51,6 +53,40 @@ export default function NotificationsPage() {
       await authApi.delete(`/notifications/${id}`);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleAcceptRequest = async (notif: any) => {
+    setProcessedRequests((prev) => ({ ...prev, [notif.id]: 'ACCEPTED' }));
+    try {
+      await authApi.put(`/users/${notif.fromUserId}/follow/accept`);
+      // Update local state to show accepted and mark read
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, readAt: new Date(), message: "accepted follow request" } : n))
+      );
+    } catch (err) {
+      console.error(err);
+      setProcessedRequests((prev) => {
+        const copy = { ...prev };
+        delete copy[notif.id];
+        return copy;
+      });
+    }
+  };
+
+  const handleDeclineRequest = async (notif: any) => {
+    setProcessedRequests((prev) => ({ ...prev, [notif.id]: 'DECLINED' }));
+    try {
+      await authApi.delete(`/users/${notif.fromUserId}/follow/decline`);
+      // Remove from list
+      setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+    } catch (err) {
+      console.error(err);
+      setProcessedRequests((prev) => {
+        const copy = { ...prev };
+        delete copy[notif.id];
+        return copy;
+      });
     }
   };
 
@@ -97,8 +133,9 @@ export default function NotificationsPage() {
           </div>
         ) : (
           notifications.map((notif, i) => {
-            const iconData = iconMap[notif.type] || { icon: Bell, color: "var(--muted)", bg: "var(--surface-elevated)" };
+            const iconData = iconMap[notif.type] || iconMap[notif.type?.toUpperCase()] || { icon: Bell, color: "var(--muted)", bg: "var(--surface-elevated)" };
             const Icon = iconData.icon;
+            const status = processedRequests[notif.id];
 
             return (
               <motion.div
@@ -121,8 +158,34 @@ export default function NotificationsPage() {
                         <span style={{ color: "var(--secondary)" }}>@{notif.fromUser.username}</span>{" "}
                       </>
                     ) : null}
-                    {notif.message}
+                    {status === 'ACCEPTED' ? 'accepted follow request' : notif.message}
                   </p>
+                  
+                  {notif.type === 'FOLLOW_REQUEST' && !notif.readAt && !status && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                      <button
+                        onClick={() => handleAcceptRequest(notif)}
+                        style={{ padding: "6px 14px", borderRadius: "var(--radius-md)", background: "var(--accent)", border: "none", color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "opacity 150ms" }}
+                        className="hover:opacity-90"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleDeclineRequest(notif)}
+                        style={{ padding: "6px 14px", borderRadius: "var(--radius-md)", background: "var(--border)", border: "none", color: "var(--primary)", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "opacity 150ms" }}
+                        className="hover:opacity-90"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  )}
+
+                  {status && (
+                    <span style={{ fontSize: 12, fontWeight: 600, color: status === 'ACCEPTED' ? 'var(--accent)' : 'var(--muted)', marginTop: 8, display: "block" }}>
+                      {status === 'ACCEPTED' ? '✓ Accepted' : 'Declined'}
+                    </span>
+                  )}
+
                   <span style={{ fontSize: 11, color: "var(--muted)", marginTop: 6, display: "block" }}>
                     {formatRelativeTime(new Date(notif.createdAt))}
                   </span>

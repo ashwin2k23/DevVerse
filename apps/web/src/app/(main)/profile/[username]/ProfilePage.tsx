@@ -226,7 +226,8 @@ export default function ProfilePage({ username }: ProfilePageProps) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [followStatus, setFollowStatus] = useState<'NONE' | 'PENDING' | 'ACCEPTED'>('NONE');
+  const isFollowing = followStatus === 'ACCEPTED';
   const [togglingFollow, setTogglingFollow] = useState(false);
   const [activeTab, setActiveTab] = useState<"projects" | "posts">("projects");
 
@@ -349,7 +350,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
         .then((res2) => {
           if (res2.data?.success && res2.data?.data) {
             setProfile(res2.data.data);
-            setIsFollowing(false);
+            setFollowStatus('NONE');
           } else {
             setError("api_error");
           }
@@ -366,7 +367,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
       .then((res) => {
         if (res.data?.success && res.data?.data) {
           setProfile(res.data.data);
-          setIsFollowing(!!res.data.data.isFollowing);
+          setFollowStatus(res.data.data.followStatus || (res.data.data.isFollowing ? 'ACCEPTED' : 'NONE'));
           setLoading(false);
         } else {
           if (isTargetingMe) {
@@ -392,35 +393,49 @@ export default function ProfilePage({ username }: ProfilePageProps) {
   const handleFollowToggle = async () => {
     if (!profile || togglingFollow) return;
     setTogglingFollow(true);
-    const nextState = !isFollowing;
-    setIsFollowing(nextState);
-    setProfile((prev: any) => ({
-      ...prev,
-      _count: {
-        ...prev._count,
-        followers: prev._count.followers + (nextState ? 1 : -1),
-      },
-    }));
+    const current = followStatus;
 
-    try {
-      if (nextState) {
-        await authApi.post(`/users/${profile.id}/follow`);
-      } else {
-        await authApi.delete(`/users/${profile.id}/follow`);
+    if (current === 'NONE') {
+      setFollowStatus('PENDING');
+      try {
+        const res = await authApi.post(`/users/${profile.id}/follow`);
+        if (res.data?.followStatus) {
+          setFollowStatus(res.data.followStatus);
+        }
+      } catch (err) {
+        console.error(err);
+        setFollowStatus('NONE');
+      } finally {
+        setTogglingFollow(false);
       }
-    } catch (err) {
-      console.error(err);
-      // Revert state
-      setIsFollowing(!nextState);
-      setProfile((prev: any) => ({
-        ...prev,
-        _count: {
-          ...prev._count,
-          followers: prev._count.followers + (nextState ? -1 : 1),
-        },
-      }));
-    } finally {
-      setTogglingFollow(false);
+    } else {
+      setFollowStatus('NONE');
+      if (current === 'ACCEPTED') {
+        setProfile((prev: any) => ({
+          ...prev,
+          _count: {
+            ...prev._count,
+            followers: Math.max(0, prev._count.followers - 1),
+          },
+        }));
+      }
+      try {
+        await authApi.delete(`/users/${profile.id}/follow`);
+      } catch (err) {
+        console.error(err);
+        setFollowStatus(current);
+        if (current === 'ACCEPTED') {
+          setProfile((prev: any) => ({
+            ...prev,
+            _count: {
+              ...prev._count,
+              followers: prev._count.followers + 1,
+            },
+          }));
+        }
+      } finally {
+        setTogglingFollow(false);
+      }
     }
   };
 
@@ -626,9 +641,9 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                     gap: 6,
                     padding: "8px 18px",
                     borderRadius: "var(--radius-full)",
-                    background: isFollowing ? "var(--border)" : "var(--accent)",
+                    background: followStatus !== 'NONE' ? "var(--border)" : "var(--accent)",
                     border: "none",
-                    color: isFollowing ? "var(--secondary)" : "white",
+                    color: followStatus !== 'NONE' ? "var(--secondary)" : "white",
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: "pointer",
@@ -636,8 +651,8 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                   }}
                   className="hover:opacity-85"
                 >
-                  {isFollowing ? <UserMinus size={14} /> : <UserPlus size={14} />}
-                  {isFollowing ? "Unfollow" : "Follow"}
+                  {followStatus === 'ACCEPTED' ? <UserMinus size={14} /> : <UserPlus size={14} />}
+                  {followStatus === 'ACCEPTED' ? "Following" : followStatus === 'PENDING' ? "Requested" : "Follow"}
                 </button>
               </>
             )}
@@ -877,7 +892,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                   </h2>
                 </div>
                 {profile.projects && profile.projects.length > 0 ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+                  <div className="projects-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
                     {profile.projects.map((proj: any, i: number) => {
                       const colors = ["from-blue-500 to-violet-600", "from-emerald-500 to-teal-600", "from-orange-500 to-red-600"];
                       const grad = colors[i % colors.length];
@@ -953,58 +968,6 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                 )}
               </motion.section>
 
-              {/* Activity heatmap */}
-              <motion.section
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-md)",
-                  padding: 20,
-                }}
-              >
-                <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>
-                  <Newspaper size={16} style={{ display: "inline", marginRight: 6, verticalAlign: "middle", color: "var(--accent)" }} />
-                  Contributions in the last year
-                </h2>
-                {/* Activity grid */}
-                <div style={{ display: "flex", gap: 3, overflowX: "auto", paddingBottom: 8 }}>
-                  {Array.from({ length: 52 }).map((_, week) => (
-                    <div key={week} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                      {Array.from({ length: 7 }).map((_, day) => {
-                        const count = getContributionCount(week, day);
-                        let bg = "var(--border)";
-                        if (count > 0) {
-                          if (count === 1) bg = "rgba(37,99,235,0.18)";
-                          else if (count === 2) bg = "rgba(37,99,235,0.45)";
-                          else if (count === 3) bg = "rgba(37,99,235,0.7)";
-                          else bg = "var(--accent)";
-                        }
-                        const cellDate = new Date();
-                        const daysAgo = (51 - week) * 7 + (6 - day);
-                        cellDate.setDate(cellDate.getDate() - daysAgo);
-                        const titleText = `${count} contribution${count !== 1 ? "s" : ""} on ${cellDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
-
-                        return (
-                          <div
-                            key={day}
-                            title={titleText}
-                            style={{
-                              width: 10,
-                              height: 10,
-                              borderRadius: 2,
-                              background: bg,
-                              cursor: "pointer",
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </motion.section>
             </>
           ) : (
             <motion.section
@@ -1291,6 +1254,11 @@ export default function ProfilePage({ username }: ProfilePageProps) {
       <style>{`
         @media (max-width: 800px) {
           .profile-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .projects-grid {
             grid-template-columns: 1fr !important;
           }
         }
