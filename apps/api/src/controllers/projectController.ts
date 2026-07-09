@@ -137,11 +137,11 @@ export const createProject = async (req: AuthenticatedRequest, res: Response) =>
       data: {
         title,
         description,
-        techStack: techStack || [],
+        techStack: techStack || "",
         githubUrl: githubUrl || null,
         demoUrl: demoUrl || null,
         bannerUrl: bannerUrl || null,
-        tags: tags || [],
+        tags: tags || "",
         userId: user.id,
         images: {
           create: (imageUrls || []).map((url: string, index: number) => ({
