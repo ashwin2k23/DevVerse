@@ -83,6 +83,27 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 DevVerse API running on http://localhost:${PORT}`);
   console.log(`📡 Socket.io ready`);
 
+  // Run production Turso database schema migration
+  const tursoUrl = process.env.TURSO_DATABASE_URL;
+  const tursoToken = process.env.TURSO_AUTH_TOKEN;
+  if (tursoUrl && tursoToken) {
+    try {
+      const { createClient } = require('@libsql/client');
+      const client = createClient({ url: tursoUrl, authToken: tursoToken });
+      client.execute(`ALTER TABLE followers ADD COLUMN status TEXT NOT NULL DEFAULT 'PENDING'`)
+        .then(() => console.log('✅ Turso Migration: Successfully added status column to followers table.'))
+        .catch((err: any) => {
+          if (err.message.includes('duplicate column') || err.message.includes('already exists') || err.message.includes('duplicate')) {
+            console.log('ℹ️ Turso Migration: status column already exists, skipping.');
+          } else {
+            console.error('❌ Turso Migration failed:', err.message);
+          }
+        });
+    } catch (err: any) {
+      console.error('❌ Failed to run Turso migration:', err.message);
+    }
+  }
+
   // One-time startup database cleanup for test accounts
   const prisma = require('./lib/prisma').default;
   prisma.user.deleteMany({
