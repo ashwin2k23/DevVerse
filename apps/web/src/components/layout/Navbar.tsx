@@ -336,7 +336,12 @@ export default function Navbar() {
                             }}
                           />
                           <div>
-                            <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--primary)" }}>{n.message}</p>
+                            <p style={{ fontSize: 13, lineHeight: 1.5, color: "var(--primary)" }}>
+                              {n.fromUser && (
+                                <strong style={{ fontWeight: 600, marginRight: 4 }}>{n.fromUser.username}</strong>
+                              )}
+                              {n.message}
+                            </p>
                             <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>{formatRelativeTime(n.createdAt)}</p>
                           </div>
                         </div>

@@ -358,7 +358,7 @@ export const followUser = async (req: AuthenticatedRequest, res: Response) => {
     });
 
     // Notify target user
-    await prisma.notification.create({
+    const notif = await prisma.notification.create({
       data: {
         userId,
         type: 'FOLLOW_REQUEST',
@@ -367,7 +367,24 @@ export const followUser = async (req: AuthenticatedRequest, res: Response) => {
         targetType: 'USER',
         message: 'sent you a follow request',
       },
+      include: {
+        fromUser: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+      },
     });
+
+    try {
+      const { io } = require('../server');
+      const { emitNotification } = require('../services/socketService');
+      emitNotification(io, userId, notif);
+    } catch (err) {
+      console.error('Failed to emit follow request socket notification:', err);
+    }
 
     res.json({ success: true, message: 'Follow request sent', followStatus: 'PENDING' });
   } catch (error: any) {
@@ -409,7 +426,7 @@ export const acceptFollowRequest = async (req: AuthenticatedRequest, res: Respon
     });
 
     // Notify requester that their request was accepted
-    await prisma.notification.create({
+    const notif = await prisma.notification.create({
       data: {
         userId: requesterId,
         type: 'FOLLOW',
@@ -418,7 +435,24 @@ export const acceptFollowRequest = async (req: AuthenticatedRequest, res: Respon
         targetType: 'USER',
         message: 'accepted your follow request',
       },
+      include: {
+        fromUser: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+      },
     });
+
+    try {
+      const { io } = require('../server');
+      const { emitNotification } = require('../services/socketService');
+      emitNotification(io, requesterId, notif);
+    } catch (err) {
+      console.error('Failed to emit follow acceptance socket notification:', err);
+    }
 
     // Mark the FOLLOW_REQUEST notification as read
     await prisma.notification.updateMany({

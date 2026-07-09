@@ -6,6 +6,7 @@ import { useUser } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { useApiClient } from "@/lib/api";
+import { useSocket } from "@/context/SocketContext";
 import {
   LayoutDashboard,
   Newspaper,
@@ -39,22 +40,37 @@ export default function Sidebar() {
 
   const { user } = useUser();
   const authApi = useApiClient();
+  const { socket } = useSocket();
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnread = async () => {
+    try {
+      const res = await authApi.get("/messages/unread-count");
+      if (res.data?.success) {
+        setUnreadCount(res.data.data?.count || 0);
+      }
+    } catch { /* ignore */ }
+  };
 
   useEffect(() => {
     if (!user) return;
-    const fetchUnread = async () => {
-      try {
-        const res = await authApi.get("/messages/unread-count");
-        if (res.data?.success) {
-          setUnreadCount(res.data.data?.count || 0);
-        }
-      } catch { /* ignore */ }
-    };
     fetchUnread();
     const interval = setInterval(fetchUnread, 10000); // poll every 10 seconds
     return () => clearInterval(interval);
   }, [user, authApi]);
+
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    const handleNewMessage = () => {
+      fetchUnread();
+    };
+
+    socket.on("message:new", handleNewMessage);
+    return () => {
+      socket.off("message:new", handleNewMessage);
+    };
+  }, [socket, user]);
 
   const localUsername =
     user?.username ||
