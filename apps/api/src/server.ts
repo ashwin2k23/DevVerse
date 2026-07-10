@@ -72,6 +72,25 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ─── Security Response Interceptor ───────────────────────────────────────────
+app.use((_req, res, next) => {
+  const originalJson = res.json;
+  res.json = function (body) {
+    if (body && typeof body === 'object') {
+      // Replace raw 500 error messages with a generic one
+      if (res.statusCode >= 500 && body.success === false) {
+        body.message = 'Internal Server Error';
+      }
+      // Never expose debug properties in JSON responses
+      delete body.stack;
+      delete body.error;
+      delete body.details;
+    }
+    return originalJson.call(this, body);
+  };
+  next();
+});
+
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api', router);
 

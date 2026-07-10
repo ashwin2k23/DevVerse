@@ -175,6 +175,11 @@ export const leaveCommunity = async (req: AuthenticatedRequest, res: Response) =
       throw createError('Creator cannot leave the community. Delete it instead.', 400);
     }
 
+    const membership = await prisma.communityMember.findUnique({
+      where: { communityId_userId: { communityId, userId: user.id } },
+    });
+    if (!membership) throw createError('You are not a member of this community', 400);
+
     await prisma.communityMember.delete({
       where: { communityId_userId: { communityId, userId: user.id } },
     });

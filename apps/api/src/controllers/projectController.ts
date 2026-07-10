@@ -242,13 +242,18 @@ export const likeProject = async (req: AuthenticatedRequest, res: Response) => {
     const user = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
     if (!user) throw createError('User not found', 404);
 
-    await prisma.like.create({
-      data: {
-        userId: user.id,
-        targetType: 'PROJECT',
-        projectId,
-      },
+    const existing = await prisma.like.findFirst({
+      where: { userId: user.id, targetType: 'PROJECT', projectId },
     });
+    if (!existing) {
+      await prisma.like.create({
+        data: {
+          userId: user.id,
+          targetType: 'PROJECT',
+          projectId,
+        },
+      });
+    }
 
     res.json({ success: true, message: 'Liked project' });
   } catch (error) {
@@ -282,13 +287,18 @@ export const bookmarkProject = async (req: AuthenticatedRequest, res: Response) 
     const user = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
     if (!user) throw createError('User not found', 404);
 
-    await prisma.bookmark.create({
-      data: {
-        userId: user.id,
-        targetType: 'PROJECT',
-        projectId,
-      },
+    const existing = await prisma.bookmark.findFirst({
+      where: { userId: user.id, targetType: 'PROJECT', projectId },
     });
+    if (!existing) {
+      await prisma.bookmark.create({
+        data: {
+          userId: user.id,
+          targetType: 'PROJECT',
+          projectId,
+        },
+      });
+    }
 
     res.json({ success: true, message: 'Bookmarked project' });
   } catch (error) {

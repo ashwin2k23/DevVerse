@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { useDbUser } from "@/context/DbUserContext";
 import {
   LayoutDashboard,
   Newspaper,
@@ -11,16 +13,24 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const mobileNav = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
-  { href: "/feed", icon: Newspaper, label: "Feed" },
-  { href: "/explore", icon: Compass, label: "Explore" },
-  { href: "/messages", icon: MessageSquare, label: "Chat" },
-  { href: "/profile", icon: User, label: "Profile" },
-];
-
 export default function BottomNav() {
   const pathname = usePathname();
+  const { user } = useUser();
+  const { dbUser } = useDbUser();
+
+  const localUsername =
+    dbUser?.username ||
+    user?.username ||
+    user?.emailAddresses?.[0]?.emailAddress?.split('@')?.[0] ||
+    user?.id;
+
+  const mobileNav = [
+    { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
+    { href: "/feed", icon: Newspaper, label: "Feed" },
+    { href: "/explore", icon: Compass, label: "Explore" },
+    { href: "/messages", icon: MessageSquare, label: "Chat" },
+    { href: localUsername ? `/profile/${localUsername}` : "#", icon: User, label: "Profile" },
+  ];
 
   return (
     <nav

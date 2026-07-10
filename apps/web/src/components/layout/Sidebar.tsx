@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { useApiClient } from "@/lib/api";
 import { useSocket } from "@/context/SocketContext";
+import { useDbUser } from "@/context/DbUserContext";
 import {
   LayoutDashboard,
   Newspaper,
@@ -71,7 +72,10 @@ export default function Sidebar() {
     };
   }, [socket, user]);
 
+  const { dbUser } = useDbUser();
+
   const localUsername =
+    dbUser?.username ||
     user?.username ||
     user?.emailAddresses?.[0]?.emailAddress?.split('@')?.[0] ||
     user?.id;

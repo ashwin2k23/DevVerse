@@ -11,7 +11,7 @@ import {
   UserPlus, UserMinus, MessageSquare, Award, Flame, Loader2,
   ArrowBigUp, ArrowBigDown, Code, Trophy, Send, BookOpen,
   Compass, Shield, Zap, Sparkles, Heart, Target, GitCommit,
-  GitPullRequest,
+  GitPullRequest, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Github, Twitter, Linkedin } from "@/components/shared/BrandIcons";
 import { useApiClient } from "@/lib/api";
@@ -235,6 +235,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
   const isFollowing = followStatus === 'ACCEPTED';
   const [togglingFollow, setTogglingFollow] = useState(false);
   const [activeTab, setActiveTab] = useState<"projects" | "posts">("projects");
+  const [showAllAchievements, setShowAllAchievements] = useState(false);
 
   const [uploadingCover, setUploadingCover] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -1474,7 +1475,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
               Achievements
             </h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-              {achievementsList.map((ach) => (
+              {(showAllAchievements ? achievementsList : achievementsList.slice(0, 6)).map((ach) => (
                 <div
                   key={ach.id}
                   title={ach.earned ? "Earned!" : "Locked"}
@@ -1510,6 +1511,32 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                 </div>
               ))}
             </div>
+            {achievementsList.length > 6 && (
+              <button
+                onClick={() => setShowAllAchievements(!showAllAchievements)}
+                style={{
+                  width: "100%",
+                  marginTop: 12,
+                  padding: "8px 12px",
+                  background: "var(--surface-elevated, var(--border))",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-sm)",
+                  color: "var(--secondary)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 4,
+                  transition: "all 150ms",
+                }}
+                className="hover:bg-surface hover:text-primary"
+              >
+                {showAllAchievements ? "Show Less" : `View All (${achievementsList.length - 6} more)`}
+                {showAllAchievements ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              </button>
+            )}
           </motion.div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import * as React from "react";
 import { useState, useEffect, useRef, useId } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useApiClient } from "@/lib/api";
+import { useDbUser } from "@/context/DbUserContext";
 import {
   Dialog,
   DialogClose,
@@ -38,6 +39,7 @@ interface EditProfileDialogProps {
 export function EditProfileDialog({ profile, trigger, onSuccess }: EditProfileDialogProps) {
   const id = useId();
   const authApi = useApiClient();
+  const { refreshDbUser } = useDbUser();
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -234,6 +236,7 @@ export function EditProfileDialog({ profile, trigger, onSuccess }: EditProfileDi
       });
 
       if (res.data?.success && res.data?.data) {
+        await refreshDbUser();
         onSuccess(res.data.data);
         setOpen(false);
       } else {

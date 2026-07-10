@@ -56,7 +56,7 @@ export default function DashboardPage() {
           user.id;
 
         // Fetch User profile (stats)
-        const profileRes = await authApi.get(`/users/${username}`).catch(() => null);
+        const profileRes = await authApi.get("/users/me/profile").catch(() => null);
         if (profileRes?.data?.success) setProfile(profileRes.data.data);
 
         // Fetch Suggested Devs
@@ -416,7 +416,7 @@ export default function DashboardPage() {
                       }}
                       className="hover:opacity-80"
                     >
-                      {followed.has(dev.id) ? "Following" : "Follow"}
+                      {followed.has(dev.id) ? "Requested" : "Follow"}
                     </button>
                   </div>
                 ))

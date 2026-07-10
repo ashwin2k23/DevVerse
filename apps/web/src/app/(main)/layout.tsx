@@ -5,13 +5,15 @@ import Navbar from "@/components/layout/Navbar";
 import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
 import { SocketProvider } from "@/context/SocketContext";
+import { DbUserProvider } from "@/context/DbUserContext";
 import UserSync from "@/components/shared/UserSync";
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <SocketProvider>
-      <UserSync />
-      <div style={{ minHeight: "100vh", background: "var(--background)" }}>
+      <DbUserProvider>
+        <UserSync />
+        <div style={{ minHeight: "100vh", background: "var(--background)" }}>
         <Navbar />
         <div
           style={{
@@ -35,6 +37,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
         {/* Mobile bottom navigation */}
         <BottomNav />
       </div>
+      </DbUserProvider>
     </SocketProvider>
   );
 }

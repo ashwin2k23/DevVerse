@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { useApiClient } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 /**
  * Silently syncs the Clerk user with the backend database on mount.
@@ -13,6 +14,7 @@ export default function UserSync() {
   const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
   const authApi = useApiClient();
+  const router = useRouter();
   const synced = useRef(false); // prevent double-sync in React StrictMode
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export default function UserSync() {
           user.emailAddresses[0]?.emailAddress?.split('@')[0] ||
           user.id;
 
-        await authApi.post('/users/sync', {
+        const res = await authApi.post('/users/sync', {
           clerkId: user.id,
           username,
           email: user.emailAddresses[0]?.emailAddress,
@@ -34,6 +36,11 @@ export default function UserSync() {
 
         synced.current = true;
         console.debug('[UserSync] ✅ synced as:', username);
+
+        if (res.data?.isNew) {
+          console.debug('[UserSync] New user detected, redirecting to profile setup...');
+          router.push('/edit-profile');
+        }
       } catch (err: any) {
         const status = err?.response?.status;
 

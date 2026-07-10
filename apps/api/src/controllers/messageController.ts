@@ -57,6 +57,9 @@ export const getOrCreateConversation = async (req: AuthenticatedRequest, res: Re
     if (!user) throw createError('User not found', 404);
 
     if (!isGroup) {
+      if (participantId === user.id) {
+        throw createError('Cannot start a direct conversation with yourself', 400);
+      }
       // Find existing direct conversation
       const existing = await prisma.conversation.findFirst({
         where: {

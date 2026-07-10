@@ -29,7 +29,7 @@ import {
   LightbulbDoodle,
 } from "@/components/shared/Doodles";
 
-// ΓöÇΓöÇΓöÇ Animation variants ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Animation variants ──────────────────────────────────────────────────────
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
   visible: (i = 0) => ({
@@ -43,7 +43,7 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
-// ΓöÇΓöÇΓöÇ Data ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Data ────────────────────────────────────────────────────────────────────
 const features = [
   {
     icon: Code2,
@@ -134,11 +134,11 @@ const testimonials = [
 
 const floatingCards = [
   { icon: GitBranch, text: "Just shipped v2.0!", user: "alex_dev", time: "2m ago", color: "text-emerald-500" },
-  { icon: Star, text: "Project got 1K stars! ≡ƒÄë", user: "sarah_codes", time: "5m ago", color: "text-yellow-500" },
+  { icon: Star, text: "Project got 1K stars! 🎉", user: "sarah_codes", time: "5m ago", color: "text-yellow-500" },
   { icon: Trophy, text: "Won the hackathon!", user: "marcus_r", time: "1h ago", color: "text-orange-500" },
 ];
 
-// ΓöÇΓöÇΓöÇ Navbar ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Navbar ──────────────────────────────────────────────────────────────────
 function LandingNav() {
   return (
     <motion.nav
@@ -238,7 +238,7 @@ function LandingNav() {
   );
 }
 
-// ΓöÇΓöÇΓöÇ Hero ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Hero ────────────────────────────────────────────────────────────────────
 function HeroSection() {
   return (
     <section
@@ -310,7 +310,7 @@ function HeroSection() {
             }}
           >
             Showcase projects, connect with brilliant developers, join communities, 
-            and accelerate your career ΓÇö all in one place.
+            and accelerate your career — all in one place.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -339,7 +339,7 @@ function HeroSection() {
               </Link>
               {/* Handwritten Curly Arrow pointing to Start for Free */}
               <CurlyArrow
-                text="Free forever! ≡ƒÜÇ"
+                text="Free forever! 🚀"
                 textOffset={{ x: -100, y: -25 }}
                 rotation={-15}
                 delay={1.1}
@@ -463,7 +463,7 @@ function HeroSection() {
                   {[
                     { label: "Followers", value: "2.4K" },
                     { label: "Projects", value: "12" },
-                    { label: "Streak", value: "≡ƒöÑ 14" },
+                    { label: "Streak", value: "🔥 14" },
                   ].map((stat) => (
                     <div
                       key={stat.label}
@@ -569,7 +569,7 @@ function HeroSection() {
               <div>
                 <div className="font-cartoon text-sm font-bold">{card.text}</div>
                 <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                  @{card.user} ┬╖ {card.time}
+                  @{card.user} · {card.time}
                 </div>
               </div>
             </motion.div>
@@ -580,7 +580,7 @@ function HeroSection() {
   );
 }
 
-// ΓöÇΓöÇΓöÇ Stats ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Stats ───────────────────────────────────────────────────────────────────
 function StatsSection() {
   return (
     <section style={{ padding: "80px 0", borderTop: "3px solid var(--primary)", borderBottom: "3px solid var(--primary)", background: "var(--background)" }}>
@@ -636,7 +636,7 @@ function StatsSection() {
   );
 }
 
-// ΓöÇΓöÇΓöÇ Features ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Features ────────────────────────────────────────────────────────────────
 function FeaturesSection() {
   const tilts = ["-1.5deg", "1.5deg", "-1deg", "2deg", "-2deg", "1deg"];
 
@@ -751,7 +751,7 @@ function FeaturesSection() {
   );
 }
 
-// ΓöÇΓöÇΓöÇ Testimonials ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Testimonials ────────────────────────────────────────────────────────────
 function TestimonialsSection() {
   return (
     <section
@@ -862,7 +862,7 @@ function TestimonialsSection() {
                 <div>
                   <div className="font-cartoon text-sm font-extrabold" style={{ color: "var(--primary)" }}>{t.name}</div>
                   <div style={{ fontSize: 11, color: "var(--secondary)" }}>
-                    {t.role} ┬╖ {t.company}
+                    {t.role} · {t.company}
                   </div>
                 </div>
               </div>
@@ -874,7 +874,7 @@ function TestimonialsSection() {
   );
 }
 
-// ΓöÇΓöÇΓöÇ CTA ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── CTA ─────────────────────────────────────────────────────────────────────
 function CTASection() {
   return (
     <section style={{ padding: "100px 0", position: "relative" }} className="bg-background">
@@ -980,7 +980,7 @@ function CTASection() {
 
               {/* Curly arrow pointing to button */}
               <CurlyArrow
-                text="Takes 30 seconds! ΓÜí"
+                text="Takes 30 seconds! ⚡"
                 color="white"
                 textOffset={{ x: 30, y: -25 }}
                 rotation={120}
@@ -995,7 +995,7 @@ function CTASection() {
   );
 }
 
-// ΓöÇΓöÇΓöÇ Footer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Footer ──────────────────────────────────────────────────────────────────
 function Footer() {
   return (
     <footer
@@ -1102,10 +1102,10 @@ function Footer() {
           }}
         >
           <p style={{ fontSize: 13, color: "var(--muted)" }} className="font-cartoon">
-            ┬⌐ 2026 DevVerse. All rights reserved.
+            © 2026 DevVerse. All rights reserved.
           </p>
           <p style={{ fontSize: 13, color: "var(--muted)" }} className="font-cartoon">
-            Made with Γ¥ñ∩╕Å for developers everywhere
+            Made with ❤️ for developers everywhere
           </p>
         </div>
       </div>
@@ -1113,7 +1113,7 @@ function Footer() {
   );
 }
 
-// ΓöÇΓöÇΓöÇ Main Page ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Main Page ───────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {

@@ -7,11 +7,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useApiClient } from "@/lib/api";
+import { useDbUser } from "@/context/DbUserContext";
 
 export default function EditProfilePage() {
   const router = useRouter();
   const { user: currentUser, isLoaded: userLoaded } = useUser();
   const authApi = useApiClient();
+  const { refreshDbUser } = useDbUser();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -188,6 +190,7 @@ export default function EditProfilePage() {
       });
 
       if (res.data?.success) {
+        await refreshDbUser();
         router.push(`/profile/${usernameState.trim()}`);
       } else {
         setError("Failed to update profile.");

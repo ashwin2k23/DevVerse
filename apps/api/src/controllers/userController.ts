@@ -44,6 +44,8 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
       select: { avatarUrl: true },
     });
 
+    const isNew = !existingUser;
+
     const user = await prisma.user.upsert({
       where: { clerkId },
       create: { clerkId, username, email, avatarUrl },
@@ -60,9 +62,10 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
       update: {},
     });
 
-    res.json({ success: true, data: user });
+    res.json({ success: true, data: user, isNew });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to sync user', error: error.message, stack: error.stack });
+    console.error('Failed to sync user:', error);
+    res.status(500).json({ success: false, message: 'Failed to sync user' });
   }
 };
 
@@ -319,7 +322,8 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
       hasMore: skip + users.length < total,
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Search failed', error: error.message, stack: error.stack });
+    console.error('Search failed:', error);
+    res.status(500).json({ success: false, message: 'Search failed' });
   }
 };
 
@@ -422,6 +426,15 @@ export const unfollowUser = async (req: AuthenticatedRequest, res: Response) => 
       where: { followerId: currentUser.id, followingId: userId },
     });
 
+    // Clean up any follow request or follow notifications sent to the target user
+    await prisma.notification.deleteMany({
+      where: {
+        userId: userId,
+        fromUserId: currentUser.id,
+        type: { in: ['FOLLOW_REQUEST', 'FOLLOW'] },
+      },
+    });
+
     res.json({ success: true, message: 'Unfollowed / request cancelled' });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
@@ -474,10 +487,14 @@ export const acceptFollowRequest = async (req: AuthenticatedRequest, res: Respon
       console.error('Failed to emit follow acceptance socket notification:', err);
     }
 
-    // Mark the FOLLOW_REQUEST notification as read
+    // Convert the FOLLOW_REQUEST notification into a read FOLLOW notification
     await prisma.notification.updateMany({
       where: { userId: currentUser.id, fromUserId: requesterId, type: 'FOLLOW_REQUEST' },
-      data: { readAt: new Date() },
+      data: {
+        readAt: new Date(),
+        type: 'FOLLOW',
+        message: 'followed you',
+      },
     });
 
     res.json({ success: true, message: 'Follow request accepted' });
@@ -516,7 +533,8 @@ export const getTrendingDevelopers = async (_req: AuthenticatedRequest, res: Res
     });
     res.json({ success: true, data: users });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to get trending developers', error: error.message, stack: error.stack });
+    console.error('Failed to get trending developers:', error);
+    res.status(500).json({ success: false, message: 'Failed to get trending developers' });
   }
 };
 

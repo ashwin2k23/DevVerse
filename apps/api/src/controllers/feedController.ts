@@ -98,7 +98,8 @@ export const getFeed = async (req: AuthenticatedRequest, res: Response) => {
       hasMore: skip + posts.length < total,
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to fetch feed', error: error.message, stack: error.stack });
+    console.error('Failed to fetch feed:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch feed' });
   }
 };
 
@@ -315,6 +316,11 @@ export const deleteComment = async (req: AuthenticatedRequest, res: Response) =>
     if (comment.userId !== user.id && user.role !== 'ADMIN' && user.role !== 'MODERATOR') {
       throw createError('Forbidden', 403);
     }
+
+    // Delete all child replies first to prevent foreign key constraint failures
+    await prisma.comment.deleteMany({
+      where: { parentId: commentId },
+    });
 
     await prisma.comment.delete({ where: { id: commentId } });
     res.json({ success: true, message: 'Comment deleted successfully' });
