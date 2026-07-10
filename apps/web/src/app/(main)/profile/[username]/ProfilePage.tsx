@@ -9,11 +9,15 @@ import {
   MapPin, Globe, Mail, CalendarDays, Users,
   FolderKanban, Newspaper, Star, Edit,
   UserPlus, UserMinus, MessageSquare, Award, Flame, Loader2,
-  ArrowBigUp, ArrowBigDown,
+  ArrowBigUp, ArrowBigDown, Code, Trophy, Send, BookOpen,
+  Compass, Shield, Zap, Sparkles, Heart, Target, GitCommit,
+  GitPullRequest,
 } from "lucide-react";
 import { Github, Twitter, Linkedin } from "@/components/shared/BrandIcons";
 import { useApiClient } from "@/lib/api";
 import ExpLevelCard from "@/components/ui/exp-level-card";
+import { EditProfileDialog } from "@/components/shared/EditProfileDialog";
+import { formatNumber } from "@/lib/utils";
 
 interface ProfilePageProps {
   username: string;
@@ -227,6 +231,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [followStatus, setFollowStatus] = useState<'NONE' | 'PENDING' | 'ACCEPTED'>('NONE');
+  const [incomingFollowStatus, setIncomingFollowStatus] = useState<'NONE' | 'PENDING' | 'ACCEPTED'>('NONE');
   const isFollowing = followStatus === 'ACCEPTED';
   const [togglingFollow, setTogglingFollow] = useState(false);
   const [activeTab, setActiveTab] = useState<"projects" | "posts">("projects");
@@ -291,48 +296,181 @@ export default function ProfilePage({ username }: ProfilePageProps) {
   };
 
   const achievementsList = [
+    // --- Level 1: Starter Achievements ---
     {
       id: "first_commit",
-      icon: "💻",
+      icon: <Code size={22} className="mx-auto text-blue-500" />,
       title: "First Commit",
       description: "Post your first project on DevVerse",
       earned: (profile?.projects?.length || profile?._count?.projects || 0) > 0,
     },
     {
-      id: "prolific_writer",
-      icon: "✍️",
-      title: "Prolific Writer",
+      id: "first_words",
+      icon: <MessageSquare size={22} className="mx-auto text-indigo-500" />,
+      title: "First Words",
       description: "Publish your first feed post",
       earned: (profile?.posts?.length || profile?._count?.posts || 0) > 0,
     },
     {
       id: "skill_collector",
-      icon: "📚",
+      icon: <BookOpen size={22} className="mx-auto text-emerald-500" />,
       title: "Skill Collector",
       description: "Add 3 or more skills to your profile",
       earned: (profile?.userSkills?.length || 0) >= 3,
     },
     {
       id: "rising_star",
-      icon: "⭐",
+      icon: <UserPlus size={22} className="mx-auto text-amber-500" />,
       title: "Rising Star",
       description: "Gain your first follower on DevVerse",
       earned: (profile?._count?.followers || 0) > 0,
     },
     {
-      id: "streak_master",
-      icon: "⚡",
-      title: "Streak Master",
-      description: "Maintain a daily login streak of at least 1 day",
-      earned: (profile?.streak || 0) > 0,
-    },
-    {
       id: "networker",
-      icon: "🤝",
+      icon: <Heart size={22} className="mx-auto text-red-500" />,
       title: "Networker",
       description: "Follow at least one other developer",
       earned: (profile?._count?.following || 0) > 0,
     },
+    {
+      id: "streak_starter",
+      icon: <Flame size={22} className="mx-auto text-orange-500" />,
+      title: "Streak Starter",
+      description: "Maintain a daily login streak of at least 1 day",
+      earned: (profile?.streak || 0) >= 1,
+    },
+    {
+      id: "first_mark",
+      icon: <CalendarDays size={22} className="mx-auto text-cyan-500" />,
+      title: "First Mark",
+      description: "Register for your first community event",
+      earned: (profile?.eventRegistrations?.length || profile?._count?.eventRegistrations || 0) > 0,
+    },
+
+    // --- Level 2: Intermediate Achievements ---
+    {
+      id: "polymath",
+      icon: <Compass size={22} className="mx-auto text-teal-500" />,
+      title: "Polymath",
+      description: "Add 8 or more skills to your profile",
+      earned: (profile?.userSkills?.length || 0) >= 8,
+    },
+    {
+      id: "collaborator",
+      icon: <Target size={22} className="mx-auto text-rose-500" />,
+      title: "Collaborator",
+      description: "Follow 10 or more developers on the platform",
+      earned: (profile?._count?.following || 0) >= 10,
+    },
+    {
+      id: "prolific_builder",
+      icon: <FolderKanban size={22} className="mx-auto text-sky-500" />,
+      title: "Prolific Builder",
+      description: "Post 5 or more projects on DevVerse",
+      earned: (profile?.projects?.length || profile?._count?.projects || 0) >= 5,
+    },
+    {
+      id: "conversationalist",
+      icon: <Send size={22} className="mx-auto text-purple-500" />,
+      title: "Conversationalist",
+      description: "Publish 5 or more feed posts",
+      earned: (profile?.posts?.length || profile?._count?.posts || 0) >= 5,
+    },
+    {
+      id: "streak_master",
+      icon: <Zap size={22} className="mx-auto text-yellow-500" />,
+      title: "Streak Master",
+      description: "Maintain a daily contribution streak of 7 days",
+      earned: (profile?.streak || 0) >= 7,
+    },
+    {
+      id: "karma_initiate",
+      icon: <Star size={22} className="mx-auto text-amber-500" />,
+      title: "Karma Initiate",
+      description: "Earn 100 or more Dev Karma experience points",
+      earned: (profile?.totalExp || 0) >= 100,
+    },
+    {
+      id: "influencer",
+      icon: <Users size={22} className="mx-auto text-indigo-400" />,
+      title: "Influencer",
+      description: "Attract 10 or more followers to your profile",
+      earned: (profile?._count?.followers || 0) >= 10,
+    },
+
+    // --- Level 3: Advanced/Epic Achievements ---
+    {
+      id: "level_5_coder",
+      icon: <Award size={22} className="mx-auto text-violet-500" />,
+      title: "Level 5 Coder",
+      description: "Reach level 5 or above in level progression",
+      earned: (profile?.level || 1) >= 5,
+    },
+    {
+      id: "grand_architect",
+      icon: <Trophy size={22} className="mx-auto text-yellow-600" />,
+      title: "Grand Architect",
+      description: "Post 10 or more projects on DevVerse",
+      earned: (profile?.projects?.length || profile?._count?.projects || 0) >= 10,
+    },
+    {
+      id: "thought_leader",
+      icon: <Award size={22} className="mx-auto text-fuchsia-500" />,
+      title: "Thought Leader",
+      description: "Publish 15 or more feed posts",
+      earned: (profile?.posts?.length || profile?._count?.posts || 0) >= 15,
+    },
+    {
+      id: "unstoppable_streak",
+      icon: <Sparkles size={22} className="mx-auto text-amber-400" />,
+      title: "Unstoppable",
+      description: "Maintain a daily contribution streak of 30 days",
+      earned: (profile?.streak || 0) >= 30,
+    },
+    {
+      id: "karma_champion",
+      icon: <GitCommit size={22} className="mx-auto text-emerald-400" />,
+      title: "Karma Champion",
+      description: "Earn 500 or more Dev Karma experience points",
+      earned: (profile?.totalExp || 0) >= 500,
+    },
+    {
+      id: "event_enthusiast",
+      icon: <Compass size={22} className="mx-auto text-cyan-400" />,
+      title: "Event Enthusiast",
+      description: "Register for 5 or more community events",
+      earned: (profile?.eventRegistrations?.length || profile?._count?.eventRegistrations || 0) >= 5,
+    },
+    {
+      id: "level_10_master",
+      icon: <Shield size={22} className="mx-auto text-pink-500" />,
+      title: "Level 10 Master",
+      description: "Reach level 10 or above in level progression",
+      earned: (profile?.level || 1) >= 10,
+    },
+
+    // --- Level 4: Legendary Achievements ---
+    {
+      id: "dev_legend",
+      icon: <Shield size={22} className="mx-auto text-red-600" />,
+      title: "Dev Legend",
+      description: "Attract 50 or more followers to your profile",
+      earned: (profile?._count?.followers || 0) >= 50,
+    },
+    {
+      id: "karma_overlord",
+      icon: <GitPullRequest size={22} className="mx-auto text-orange-600" />,
+      title: "Karma Overlord",
+      description: "Earn 2000 or more Dev Karma experience points",
+      earned: (profile?.totalExp || 0) >= 2000,
+    },
+    {
+      id: "level_20_transcendent",
+      icon: <Sparkles size={22} className="mx-auto text-rose-600" />,
+      title: "Transcendent",
+      description: "Reach level 20 or above in level progression",
+      earned: (profile?.level || 1) >= 20,
+    }
   ];
 
   useEffect(() => {
@@ -351,6 +489,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
           if (res2.data?.success && res2.data?.data) {
             setProfile(res2.data.data);
             setFollowStatus('NONE');
+            setIncomingFollowStatus('NONE');
           } else {
             setError("api_error");
           }
@@ -368,6 +507,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
         if (res.data?.success && res.data?.data) {
           setProfile(res.data.data);
           setFollowStatus(res.data.data.followStatus || (res.data.data.isFollowing ? 'ACCEPTED' : 'NONE'));
+          setIncomingFollowStatus(res.data.data.incomingFollowStatus || 'NONE');
           setLoading(false);
         } else {
           if (isTargetingMe) {
@@ -436,6 +576,33 @@ export default function ProfilePage({ username }: ProfilePageProps) {
       } finally {
         setTogglingFollow(false);
       }
+    }
+  };
+
+  const handleAcceptIncoming = async () => {
+    if (!profile) return;
+    try {
+      await authApi.put(`/users/${profile.id}/follow/accept`);
+      setIncomingFollowStatus('ACCEPTED');
+      setProfile((prev: any) => ({
+        ...prev,
+        _count: {
+          ...prev._count,
+          following: (prev._count?.following || 0) + 1
+        }
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeclineIncoming = async () => {
+    if (!profile) return;
+    try {
+      await authApi.delete(`/users/${profile.id}/follow/decline`);
+      setIncomingFollowStatus('NONE');
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -657,30 +824,108 @@ export default function ProfilePage({ username }: ProfilePageProps) {
               </>
             )}
             {isMe && (
-              <Link
-                href="/edit-profile"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "8px 16px",
-                  borderRadius: "var(--radius-full)",
-                  border: "1px solid var(--border)",
-                  background: "transparent",
-                  color: "var(--secondary)",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  textDecoration: "none",
-                  transition: "background 150ms",
+              <EditProfileDialog
+                profile={profile}
+                onSuccess={(updatedUser) => {
+                  setProfile((prev: any) => ({
+                    ...prev,
+                    ...updatedUser,
+                    profile: {
+                      ...prev?.profile,
+                      ...updatedUser?.profile,
+                    },
+                    socialLinks: updatedUser?.socialLinks || prev?.socialLinks,
+                    userSkills: updatedUser?.userSkills || prev?.userSkills,
+                  }));
+                  if (updatedUser.username && updatedUser.username !== profile.username) {
+                    router.replace(`/profile/${updatedUser.username}`);
+                  }
                 }}
-                className="hover:bg-surface"
-              >
-                <Edit size={13} />
-                Edit Profile
-              </Link>
+                trigger={
+                  <button
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "8px 16px",
+                      borderRadius: "var(--radius-full)",
+                      border: "1px solid var(--border)",
+                      background: "transparent",
+                      color: "var(--secondary)",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      transition: "background 150ms",
+                    }}
+                    className="hover:bg-surface"
+                  >
+                    <Edit size={13} />
+                    Edit Profile
+                  </button>
+                }
+              />
             )}
           </motion.div>
         </div>
+
+        {incomingFollowStatus === 'PENDING' && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              padding: "12px 18px",
+              background: "var(--accent-muted, rgba(37,99,235,0.05))",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-lg)",
+              marginTop: 16,
+              marginBottom: 4,
+              width: "100%",
+              maxWidth: 450,
+            }}
+          >
+            <div style={{ fontSize: 13, color: "var(--primary)", fontWeight: 500 }}>
+              <strong>{profile.username}</strong> wants to follow you
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={handleAcceptIncoming}
+                style={{
+                  padding: "6px 14px",
+                  background: "var(--accent)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "var(--radius-md)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "opacity 150ms",
+                }}
+                className="hover:opacity-90"
+              >
+                Accept
+              </button>
+              <button
+                onClick={handleDeclineIncoming}
+                style={{
+                  padding: "6px 14px",
+                  background: "var(--surface-elevated, var(--border))",
+                  color: "var(--primary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-md)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "opacity 150ms",
+                }}
+                className="hover:opacity-90"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Name & bio */}
         <motion.div
@@ -691,6 +936,21 @@ export default function ProfilePage({ username }: ProfilePageProps) {
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>{profile.username}</h1>
+            {incomingFollowStatus === 'ACCEPTED' && (
+              <span
+                style={{
+                  background: "var(--border)",
+                  color: "var(--secondary)",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  padding: "2px 6px",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                Follows you
+              </span>
+            )}
             <span
               style={{
                 background: "linear-gradient(135deg, #F59E0B, #EF4444)",
@@ -1040,12 +1300,14 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                 <div>
                   <p style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Dev Karma</p>
                   <p style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
-                    <Star size={13} fill="currentColor" />
-                    {(
-                      (profile?._count?.posts || 0) * 15 +
-                      (profile?._count?.projects || 0) * 30 +
-                      (profile?.streak || 0) * 10 +
-                      (profile?.level || 1) * 50
+                    ★{" "}
+                    {formatNumber(
+                      profile.totalExp !== undefined
+                        ? profile.totalExp
+                        : ((profile?._count?.posts || 0) * 15 +
+                          (profile?._count?.projects || 0) * 30 +
+                          (profile?.streak || 0) * 10 +
+                          (profile?.level || 1) * 50)
                     )}
                   </p>
                 </div>
@@ -1064,8 +1326,9 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                 const projectsCount = profile?._count?.projects || profile?.projects?.length || 0;
                 const streakDays    = profile?.streak || 0;
                 const currentLevel  = profile?.level  || 1;
-                // Compute total EXP from real contribution data
-                const totalExp = postsCount * 15 + projectsCount * 30 + streakDays * 10;
+                const totalExp      = profile.totalExp !== undefined
+                  ? profile.totalExp
+                  : (postsCount * 15 + projectsCount * 30 + streakDays * 10);
                 return (
                   <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border-subtle)" }}>
                     <p style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
@@ -1227,7 +1490,7 @@ export default function ProfilePage({ username }: ProfilePageProps) {
                     transition: "all 200ms",
                   }}
                 >
-                  <div style={{ fontSize: 24, marginBottom: 6 }}>{ach.icon}</div>
+                  <div style={{ marginBottom: 6, display: "flex", justifyContent: "center" }}>{ach.icon}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: ach.earned ? "var(--primary)" : "var(--secondary)" }}>
                     {ach.title}
                   </div>

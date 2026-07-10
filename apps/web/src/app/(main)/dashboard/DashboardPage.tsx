@@ -194,12 +194,11 @@ export default function DashboardPage() {
             }}
           >
             <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Quick Actions</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
               {[
                 { label: "New Post", icon: BookOpen, href: "/feed", color: "#2563EB" },
                 { label: "Add Project", icon: FolderKanban, href: "/projects", color: "#7C3AED" },
                 { label: "Find Devs", icon: Users, href: "/explore", color: "#10B981" },
-                { label: "Browse Events", icon: Globe, href: "/events", color: "#F59E0B" },
               ].map((action) => (
                 <Link
                   key={action.label}
@@ -425,64 +424,7 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
-          {/* Upcoming Events */}
-          <motion.div
-            custom={5}
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              padding: 20,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 600 }}>Upcoming Events</h2>
-              <Link href="/events" style={{ fontSize: 12, color: "var(--accent)", fontWeight: 500 }}>
-                Browse
-              </Link>
-            </div>
-            {[
-              { name: "React Summit 2026", type: "Conference", date: "Jul 15", badge: "🎤" },
-              { name: "Hack for Good", type: "Hackathon", date: "Jul 20", badge: "🏆" },
-              { name: "DevOps Workshop", type: "Workshop", date: "Jul 25", badge: "🛠️" },
-            ].map((event, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  gap: 12,
-                  padding: "10px 0",
-                  borderBottom: i < 2 ? "1px solid var(--border-subtle)" : "none",
-                  alignItems: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 10,
-                    background: "var(--surface-elevated)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 18,
-                    flexShrink: 0,
-                  }}
-                >
-                  {event.badge}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600 }}>{event.name}</p>
-                  <p style={{ fontSize: 11, color: "var(--muted)" }}>
-                    {event.type} · {event.date}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </motion.div>
+
 
           {/* Profile completion */}
           <motion.div

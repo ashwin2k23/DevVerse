@@ -17,6 +17,7 @@ import {
   getSuggestedDevelopers,
   getBookmarks,
   getUserContributions,
+  getPendingFollowRequests,
 } from '../controllers/userController';
 
 const router: Router = Router();
@@ -27,6 +28,7 @@ router.get('/trending', optionalAuth, getTrendingDevelopers);
 router.get('/suggested', requireAuth, getSuggestedDevelopers);
 router.get('/me/bookmarks', requireAuth, getBookmarks);
 router.get('/me/profile', requireAuth, getCurrentUserProfile);
+router.get('/me/follow-requests', requireAuth, getPendingFollowRequests);
 router.get('/:username', optionalAuth, getProfile);
 router.get('/:username/contributions', optionalAuth, getUserContributions);
 router.put('/me', requireAuth, updateProfile);

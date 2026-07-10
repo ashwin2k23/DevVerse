@@ -27,7 +27,6 @@ const navItems = [
   { href: "/explore", icon: Compass, label: "Explore" },
   { href: "/projects", icon: FolderKanban, label: "Projects" },
   { href: "/communities", icon: Users, label: "Communities" },
-  { href: "/events", icon: Calendar, label: "Events" },
   { href: "/messages", icon: MessageSquare, label: "Messages" },
   { href: "/notifications", icon: Bell, label: "Notifications" },
   { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },

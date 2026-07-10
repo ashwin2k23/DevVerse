@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
 import { prisma } from '../lib/prisma';
+import { computeUserStats } from '../utils/progression';
 
 const userSelect = {
   id: true,
@@ -38,10 +39,17 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { clerkId, username, email, avatarUrl } = req.body;
 
+    const existingUser = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { avatarUrl: true },
+    });
+
     const user = await prisma.user.upsert({
       where: { clerkId },
       create: { clerkId, username, email, avatarUrl },
-      update: { avatarUrl },
+      update: {
+        avatarUrl: existingUser?.avatarUrl ? existingUser.avatarUrl : avatarUrl,
+      },
       select: userSelect,
     });
 
@@ -103,18 +111,25 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
     console.log('[DEBUG] getProfile user query result:', user ? 'FOUND' : 'NOT FOUND');
     if (!user) throw createError('User not found', 404);
 
+    const stats = await computeUserStats(user.id);
+    user.level = stats.level;
+    user.streak = stats.streak;
+    (user as any).totalExp = stats.totalExp;
+
     // Check follow status between current user and this profile
     let isFollowing = false;
     let followStatus: 'NONE' | 'PENDING' | 'ACCEPTED' = 'NONE';
+    let incomingFollowStatus: 'NONE' | 'PENDING' | 'ACCEPTED' = 'NONE';
     if (req.clerkId) {
       const currentUser = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
       if (currentUser) {
         followStatus = await getFollowStatus(currentUser.id, user.id);
         isFollowing = followStatus === 'ACCEPTED';
+        incomingFollowStatus = await getFollowStatus(user.id, currentUser.id);
       }
     }
 
-    res.json({ success: true, data: { ...user, isFollowing, followStatus } });
+    res.json({ success: true, data: { ...user, isFollowing, followStatus, incomingFollowStatus } });
   } catch (error: any) {
     console.error('[ERROR] getProfile caught exception:', error);
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
@@ -144,6 +159,11 @@ export const getCurrentUserProfile = async (req: AuthenticatedRequest, res: Resp
     });
 
     if (!user) throw createError('User not found', 404);
+
+    const stats = await computeUserStats(user.id);
+    user.level = stats.level;
+    user.streak = stats.streak;
+    (user as any).totalExp = stats.totalExp;
     res.json({ success: true, data: { ...user, isFollowing: false } });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
@@ -521,6 +541,22 @@ export const getSuggestedDevelopers = async (req: AuthenticatedRequest, res: Res
     });
 
     res.json({ success: true, data: users });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+};
+
+export const getPendingFollowRequests = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const currentUser = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
+    if (!currentUser) throw createError('User not found', 404);
+
+    const requests = await prisma.follower.findMany({
+      where: { followingId: currentUser.id, status: 'PENDING' },
+      include: { follower: { select: userSelect } },
+    });
+
+    res.json({ success: true, data: requests.map((r: any) => r.follower) });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }

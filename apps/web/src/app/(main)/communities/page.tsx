@@ -5,6 +5,20 @@ import { useState, useEffect, useCallback } from "react";
 import { Search, Plus, Users, MessageSquare, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useApiClient } from "@/lib/api";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const gradients = [
   "from-sky-400 to-blue-600",
@@ -24,6 +38,14 @@ export default function CommunitiesPage() {
   const [loading, setLoading] = useState(true);
   const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
 
+  // Creation Modal States
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
   const fetchCommunities = useCallback(async (q = "") => {
     setLoading(true);
     try {
@@ -31,7 +53,6 @@ export default function CommunitiesPage() {
       if (res.data?.success) {
         const data = res.data.data || [];
         setCommunities(data);
-        // Pre-set joined state from API flags
         const joined = new Set<string>(data.filter((c: any) => c.isMember).map((c: any) => c.id));
         setJoinedIds(joined);
       }
@@ -50,7 +71,6 @@ export default function CommunitiesPage() {
   const toggleJoin = async (communityId: string) => {
     const isJoined = joinedIds.has(communityId);
     setJoinedIds((prev) => { const n = new Set(prev); isJoined ? n.delete(communityId) : n.add(communityId); return n; });
-    // Update member count optimistically
     setCommunities((prev) => prev.map((c) =>
       c.id === communityId
         ? { ...c, _count: { ...c._count, members: (c._count?.members || 0) + (isJoined ? -1 : 1) } }
@@ -60,13 +80,40 @@ export default function CommunitiesPage() {
       if (isJoined) await authApi.delete(`/communities/${communityId}/leave`);
       else await authApi.post(`/communities/${communityId}/join`);
     } catch {
-      // Revert
       setJoinedIds((prev) => { const n = new Set(prev); isJoined ? n.add(communityId) : n.delete(communityId); return n; });
       setCommunities((prev) => prev.map((c) =>
         c.id === communityId
           ? { ...c, _count: { ...c._count, members: (c._count?.members || 0) + (isJoined ? 1 : -1) } }
           : c
       ));
+    }
+  };
+
+  const handleCreateCommunity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim() || !newDescription.trim()) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const res = await authApi.post("/communities", {
+        name: newName.trim(),
+        description: newDescription.trim(),
+        isPrivate,
+      });
+      if (res.data?.success) {
+        setCreateOpen(false);
+        setNewName("");
+        setNewDescription("");
+        setIsPrivate(false);
+        fetchCommunities(search);
+      } else {
+        setCreateError("Failed to create space.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setCreateError(err?.response?.data?.message || "Failed to create space.");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -81,14 +128,83 @@ export default function CommunitiesPage() {
               Join topic-focused spaces to discuss, share, and collaborate
             </p>
           </div>
-          <button
-            id="create-community-btn"
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", background: "var(--accent)", color: "white", borderRadius: "var(--radius-full)", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", transition: "opacity 150ms" }}
-            className="hover:opacity-85"
-          >
-            <Plus size={15} />
-            Create Space
-          </button>
+          
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <button
+                id="create-community-btn"
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", background: "var(--accent)", color: "white", borderRadius: "var(--radius-full)", fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", transition: "opacity 150ms" }}
+                className="hover:opacity-85"
+              >
+                <Plus size={15} />
+                Create Space
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Create a new Space</DialogTitle>
+                <DialogDescription>
+                  Create a public or private topic-focused space to discuss, share, and collaborate.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateCommunity} className="space-y-4 pt-2">
+                {createError && (
+                  <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-lg p-3 text-xs">
+                    {createError}
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label htmlFor="space-name">Space Name</Label>
+                  <Input
+                    id="space-name"
+                    placeholder="e.g. NextJS Developers"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="space-description">Description</Label>
+                  <Textarea
+                    id="space-description"
+                    placeholder="Describe the topic and rules of your space..."
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    id="space-private"
+                    type="checkbox"
+                    checked={isPrivate}
+                    onChange={(e) => setIsPrivate(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                  />
+                  <Label htmlFor="space-private" className="cursor-pointer select-none">
+                    Make this space private
+                  </Label>
+                </div>
+                <DialogFooter className="pt-4">
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button type="submit" disabled={creating}>
+                    {creating ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin mr-2" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Space"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </motion.div>
 

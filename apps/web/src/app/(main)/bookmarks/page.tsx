@@ -19,7 +19,7 @@ function Avatar({ username, avatarUrl, size = 36 }: { username: string; avatarUr
 
 export default function BookmarksPage() {
   const authApi = useApiClient();
-  const [activeTab, setActiveTab] = useState<"projects" | "posts" | "events" >("projects");
+  const [activeTab, setActiveTab] = useState<"projects" | "posts">("projects");
   const [loading, setLoading] = useState(true);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
 
@@ -36,18 +36,15 @@ export default function BookmarksPage() {
 
   const bookmarkedProjects = bookmarks.filter((b) => b.targetType === "PROJECT" && b.project).map((b) => b.project);
   const bookmarkedPosts = bookmarks.filter((b) => b.targetType === "POST" && b.post).map((b) => b.post);
-  const bookmarkedEvents = bookmarks.filter((b) => b.targetType === "EVENT" && b.event).map((b) => b.event);
 
   const removeBookmark = async (targetType: string, id: string) => {
     setBookmarks((prev) => prev.filter((b) => {
       if (targetType === "PROJECT") return b.projectId !== id;
-      if (targetType === "POST") return b.postId !== id;
-      return b.eventId !== id;
+      return b.postId !== id;
     }));
     try {
       if (targetType === "PROJECT") await authApi.delete(`/projects/${id}/bookmark`);
       else if (targetType === "POST") await authApi.delete(`/feed/${id}/bookmark`);
-      else await authApi.delete(`/events/${id}/bookmark`);
     } catch (err) {
       console.error(err);
     }
@@ -59,7 +56,7 @@ export default function BookmarksPage() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em" }}>Bookmarks</h1>
         <p style={{ color: "var(--secondary)", fontSize: 14, marginTop: 4 }}>
-          Access your saved posts, projects, and events
+          Access your saved posts and projects
         </p>
       </motion.div>
 
@@ -68,7 +65,6 @@ export default function BookmarksPage() {
         {[
           { id: "projects" as const, label: "Projects", icon: FolderKanban },
           { id: "posts" as const, label: "Posts", icon: Newspaper },
-          { id: "events" as const, label: "Events", icon: Calendar },
         ].map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -167,43 +163,6 @@ export default function BookmarksPage() {
                       <p style={{ fontSize: 13.5, lineHeight: 1.6, whiteSpace: "pre-line" }}>{post.content}</p>
                     </div>
                   ))
-                )}
-              </div>
-            )}
-
-            {activeTab === "events" && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }} className="bookmarks-grid">
-                {bookmarkedEvents.length === 0 ? (
-                  <div style={{ gridColumn: "span 2", textAlign: "center", padding: 40, color: "var(--muted)" }}>No saved events yet.</div>
-                ) : (
-                  bookmarkedEvents.map((event, i) => {
-                    const colors = ["from-blue-600 to-violet-700", "from-emerald-500 to-teal-600", "from-orange-500 to-red-600"];
-                    const color = colors[i % colors.length];
-                    return (
-                      <div key={event.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
-                        <div style={{ height: 90, display: "flex", alignItems: "center", fontSize: 24, fontWeight: 800, color: "rgba(255,255,255,0.3)", justifyContent: "center" }} className={`bg-gradient-to-br ${color}`}>
-                          {event.title.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div style={{ padding: 14 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                            <span style={{ fontSize: 10, fontWeight: 600, background: "var(--surface-elevated)", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 7px", color: "var(--secondary)" }}>
-                              {event.type}
-                            </span>
-                            <button onClick={() => removeBookmark("EVENT", event.id)} style={{ padding: "2px 8px", borderRadius: "var(--radius-full)", background: "var(--border)", border: "none", color: "var(--secondary)", fontSize: 10, cursor: "pointer" }}>
-                              Remove
-                            </button>
-                          </div>
-                          <h3 style={{ fontSize: 14, fontWeight: 700, marginTop: 8, marginBottom: 4 }}>{event.title}</h3>
-                          {event.location && (
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--muted)" }}>
-                              <MapPin size={11} />
-                              {event.location}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
                 )}
               </div>
             )}

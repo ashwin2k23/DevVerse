@@ -20,6 +20,18 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processedRequests, setProcessedRequests] = useState<Record<string, 'ACCEPTED' | 'DECLINED'>>({});
+  const [followRequests, setFollowRequests] = useState<any[]>([]);
+
+  const fetchFollowRequests = async () => {
+    try {
+      const res = await authApi.get("/users/me/follow-requests");
+      if (res.data?.success) {
+        setFollowRequests(res.data.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -36,7 +48,36 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     fetchNotifications();
+    fetchFollowRequests();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAcceptFollowRequest = async (userId: string) => {
+    try {
+      await authApi.put(`/users/${userId}/follow/accept`);
+      setFollowRequests((prev) => prev.filter((r) => r.id !== userId));
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.fromUserId === userId && n.type === 'FOLLOW_REQUEST'
+            ? { ...n, readAt: new Date(), message: "accepted follow request" }
+            : n
+        )
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeclineFollowRequest = async (userId: string) => {
+    try {
+      await authApi.delete(`/users/${userId}/follow/decline`);
+      setFollowRequests((prev) => prev.filter((r) => r.id !== userId));
+      setNotifications((prev) =>
+        prev.filter((n) => !(n.fromUserId === userId && n.type === 'FOLLOW_REQUEST'))
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date() })));
@@ -64,6 +105,8 @@ export default function NotificationsPage() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === notif.id ? { ...n, readAt: new Date(), message: "accepted follow request" } : n))
       );
+      // Remove from top pending requests list if it exists
+      setFollowRequests((prev) => prev.filter((r) => r.id !== notif.fromUserId));
     } catch (err) {
       console.error(err);
       setProcessedRequests((prev) => {
@@ -80,6 +123,8 @@ export default function NotificationsPage() {
       await authApi.delete(`/users/${notif.fromUserId}/follow/decline`);
       // Remove from list
       setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+      // Remove from top pending requests list if it exists
+      setFollowRequests((prev) => prev.filter((r) => r.id !== notif.fromUserId));
     } catch (err) {
       console.error(err);
       setProcessedRequests((prev) => {
@@ -118,6 +163,131 @@ export default function NotificationsPage() {
           </button>
         )}
       </motion.div>
+
+      {/* Pending Follow Requests section */}
+      {!loading && followRequests.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-lg)",
+            padding: "18px 20px",
+            marginBottom: 20,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              marginBottom: 14,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: "var(--primary)",
+            }}
+          >
+            <UserPlus size={16} style={{ color: "var(--accent)" }} />
+            Follow Requests ({followRequests.length})
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {followRequests.map((req) => (
+              <div
+                key={req.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  paddingBottom: 10,
+                  borderBottom: "1px solid var(--border)",
+                }}
+                className="last:border-0 last:pb-0"
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {/* Avatar */}
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      overflow: "hidden",
+                      background: "var(--border)",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {req.avatarUrl ? (
+                      <img
+                        src={req.avatarUrl}
+                        alt={req.username}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          background: "linear-gradient(135deg, #2563EB, #7C3AED)",
+                          color: "white",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 12,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {req.username.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--primary)" }}>{req.username}</p>
+                    <p style={{ fontSize: 11.5, color: "var(--secondary)" }}>@{req.username}</p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => handleAcceptFollowRequest(req.id)}
+                    style={{
+                      padding: "6px 14px",
+                      background: "var(--accent)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "var(--radius-md)",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "opacity 150ms",
+                    }}
+                    className="hover:opacity-90"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleDeclineFollowRequest(req.id)}
+                    style={{
+                      padding: "6px 14px",
+                      background: "var(--surface-elevated, var(--border))",
+                      color: "var(--primary)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-md)",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "opacity 150ms",
+                    }}
+                    className="hover:opacity-90"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Notifications List */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
