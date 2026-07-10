@@ -2,6 +2,7 @@
   "name": "devverse",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@11.10.0",
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",

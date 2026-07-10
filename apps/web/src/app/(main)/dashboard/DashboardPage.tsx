@@ -55,20 +55,17 @@ export default function DashboardPage() {
           user.emailAddresses?.[0]?.emailAddress?.split('@')?.[0] ||
           user.id;
 
-        // Fetch User profile (stats)
-        const profileRes = await authApi.get("/users/me/profile").catch(() => null);
+        // Fetch all dashboard data concurrently in parallel to minimize load times
+        const [profileRes, suggestedRes, projectsRes, notificationsRes] = await Promise.all([
+          authApi.get("/users/me/profile").catch(() => null),
+          authApi.get("/users/suggested").catch(() => null),
+          authApi.get("/projects?limit=3").catch(() => null),
+          authApi.get("/notifications").catch(() => null),
+        ]);
+
         if (profileRes?.data?.success) setProfile(profileRes.data.data);
-
-        // Fetch Suggested Devs
-        const suggestedRes = await authApi.get("/users/suggested").catch(() => null);
         if (suggestedRes?.data?.success) setSuggested(suggestedRes.data.data || []);
-
-        // Fetch Trending Projects
-        const projectsRes = await authApi.get("/projects?limit=3").catch(() => null);
         if (projectsRes?.data?.success) setProjects(projectsRes.data.data || []);
-
-        // Fetch Recent Activity (Notifications)
-        const notificationsRes = await authApi.get("/notifications").catch(() => null);
         if (notificationsRes?.data?.success) setActivities(notificationsRes.data.data || []);
       } catch (err) {
         console.error("Dashboard data load error:", err);
