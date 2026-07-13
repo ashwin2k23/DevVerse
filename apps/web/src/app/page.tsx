@@ -95,12 +95,6 @@ const features = [
   },
 ];
 
-const stats = [
-  { value: "50K+", label: "Developers" },
-  { value: "12K+", label: "Projects" },
-  { value: "800+", label: "Communities" },
-  { value: "200+", label: "Events Monthly" },
-];
 
 const testimonials = [
   {
@@ -363,18 +357,7 @@ function HeroSection() {
             </Link>
           </motion.div>
 
-          {/* Social proof */}
-          <motion.p
-            custom={3}
-            initial="hidden"
-            animate="visible"
-            variants={fadeUp}
-            style={{ marginTop: 32, color: "var(--muted)", fontSize: 13 }}
-            className="font-cartoon"
-          >
-            Trusted by{" "}
-            <strong style={{ color: "var(--secondary)" }}>50,000+</strong> developers worldwide
-          </motion.p>
+
         </div>
 
         {/* Dashboard Preview Section */}
@@ -580,61 +563,6 @@ function HeroSection() {
   );
 }
 
-// ─── Stats ───────────────────────────────────────────────────────────────────
-function StatsSection() {
-  return (
-    <section style={{ padding: "80px 0", borderTop: "3px solid var(--primary)", borderBottom: "3px solid var(--primary)", background: "var(--background)" }}>
-      <div className="max-w-7xl mx-auto px-6">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={stagger}
-          style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }}
-          className="grid-cols-2 sm:grid-cols-4"
-        >
-          {stats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              variants={fadeUp}
-              className="cartoon-box"
-              whileHover={{ scale: 1.05, rotate: i % 2 === 0 ? 1.5 : -1.5 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-              style={{
-                textAlign: "center",
-                padding: "24px 16px",
-                borderWidth: 3,
-                cursor: "pointer",
-                position: "relative",
-              }}
-            >
-              <div
-                className="font-cartoon font-extrabold"
-                style={{
-                  fontSize: "clamp(28px, 3.5vw, 42px)",
-                  color: "var(--primary)",
-                }}
-              >
-                {stat.value}
-              </div>
-              <div
-                className="font-cartoon text-sm font-bold"
-                style={{ color: "var(--secondary)", marginTop: 4 }}
-              >
-                {stat.label}
-              </div>
-
-              {/* Little sparkle doodle over the first stat card */}
-              {i === 0 && (
-                <StarSparkle className="absolute -top-3.5 -right-3.5" delay={0.5} />
-              )}
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
 
 // ─── Features ────────────────────────────────────────────────────────────────
 function FeaturesSection() {
@@ -953,7 +881,7 @@ function CTASection() {
               position: "relative",
             }}
           >
-            Join 50,000+ developers already building, connecting, and growing on DevVerse.
+            Join other developers already building, connecting, and growing on DevVerse.
           </motion.p>
           <motion.div
             variants={fadeUp}
@@ -1141,7 +1069,6 @@ export default function LandingPage() {
       <LandingNav />
       <main>
         <HeroSection />
-        <StatsSection />
         <FeaturesSection />
         <TestimonialsSection />
         <CTASection />
