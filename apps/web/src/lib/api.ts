@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '@clerk/nextjs';
 
@@ -14,18 +15,22 @@ export const api = axios.create({
 export function useApiClient() {
   const { getToken } = useAuth();
 
-  const authApi = axios.create({
-    baseURL: `${BASE_URL}/api`,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const authApi = useMemo(() => {
+    const instance = axios.create({
+      baseURL: `${BASE_URL}/api`,
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-  authApi.interceptors.request.use(async (config) => {
-    const token = await getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
+    instance.interceptors.request.use(async (config) => {
+      const token = await getToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+
+    return instance;
+  }, [getToken]);
 
   return authApi;
 }

@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma';
 
-export async function computeUserStats(userId: string) {
+export async function computeUserStats(userId: string, currentLevel?: number, currentStreak?: number) {
   const [projects, posts, comments, likes] = await Promise.all([
     prisma.project.findMany({ where: { userId }, select: { createdAt: true } }),
     prisma.post.findMany({ where: { userId }, select: { createdAt: true } }),
@@ -70,10 +70,13 @@ export async function computeUserStats(userId: string) {
     }
   }
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { level, streak },
-  });
+  // Only write to database if the values actually changed, preventing heavy DB write locks on GET requests
+  if (currentLevel === undefined || currentStreak === undefined || level !== currentLevel || streak !== currentStreak) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { level, streak },
+    });
+  }
 
   return { level, streak, totalExp };
 }

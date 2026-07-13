@@ -16,8 +16,8 @@ const userSelect = {
   createdAt: true,
   _count: {
     select: {
-      followers: true,
-      following: true,
+      followers: { where: { status: 'ACCEPTED' } },
+      following: { where: { status: 'ACCEPTED' } },
       projects: true,
       posts: true,
     },
@@ -106,7 +106,12 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
           },
         },
         _count: {
-          select: { followers: true, following: true, projects: true, posts: true },
+          select: {
+            followers: { where: { status: 'ACCEPTED' } },
+            following: { where: { status: 'ACCEPTED' } },
+            projects: true,
+            posts: true,
+          },
         },
       },
     });
@@ -114,7 +119,7 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
     console.log('[DEBUG] getProfile user query result:', user ? 'FOUND' : 'NOT FOUND');
     if (!user) throw createError('User not found', 404);
 
-    const stats = await computeUserStats(user.id);
+    const stats = await computeUserStats(user.id, user.level, user.streak);
     user.level = stats.level;
     user.streak = stats.streak;
     (user as any).totalExp = stats.totalExp;
@@ -156,14 +161,19 @@ export const getCurrentUserProfile = async (req: AuthenticatedRequest, res: Resp
           include: { _count: { select: { likes: true, comments: true } } },
         },
         _count: {
-          select: { followers: true, following: true, projects: true, posts: true },
+          select: {
+            followers: { where: { status: 'ACCEPTED' } },
+            following: { where: { status: 'ACCEPTED' } },
+            projects: true,
+            posts: true,
+          },
         },
       },
     });
 
     if (!user) throw createError('User not found', 404);
 
-    const stats = await computeUserStats(user.id);
+    const stats = await computeUserStats(user.id, user.level, user.streak);
     user.level = stats.level;
     user.streak = stats.streak;
     (user as any).totalExp = stats.totalExp;

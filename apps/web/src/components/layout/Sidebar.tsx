@@ -89,7 +89,7 @@ export default function Sidebar() {
   return (
     <div
       style={{
-        width: "100%",
+        width: "fit-content",
         padding: "6px",
         borderRadius: "var(--radius-xl)",
         display: "flex",
