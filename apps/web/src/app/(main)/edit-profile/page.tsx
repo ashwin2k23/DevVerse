@@ -479,7 +479,7 @@ export default function EditProfilePage() {
           style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: 20, display: "flex", flexDirection: "column", gap: 14 }}
         >
           <h2 style={{ fontSize: 14, fontWeight: 600, borderBottom: "1px solid var(--border)", paddingBottom: 8, marginBottom: 4 }}>Social Links</h2>
-          <p style={{ fontSize: 12, color: "var(--muted)", marginTop: -8 }}>Add your social profiles. They'll appear as clickable icons on your public profile.</p>
+          <p style={{ fontSize: 12, color: "var(--muted)", marginTop: -8 }}>Add your social profiles. They&apos;ll appear as clickable icons on your public profile.</p>
 
           {[
             { id: "edit-instagram", label: "Instagram", placeholder: "https://instagram.com/yourhandle", value: instagram, onChange: setInstagram },

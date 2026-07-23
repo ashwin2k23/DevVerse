@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { io, Socket } from 'socket.io-client';
 
@@ -18,7 +18,7 @@ const SocketContext = createContext<SocketContextValue>({
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser();
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 
@@ -27,23 +27,23 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
 
-    const socket = io(SOCKET_URL, {
+    const socketInstance = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
     });
-    socketRef.current = socket;
 
-    socket.on('connect', () => {
+    socketInstance.on('connect', () => {
+      setSocket(socketInstance);
       setIsConnected(true);
       // Authenticate so the server knows who this socket belongs to
-      socket.emit('authenticate', user.id);
+      socketInstance.emit('authenticate', user.id);
     });
 
-    socket.on('disconnect', () => {
+    socketInstance.on('disconnect', () => {
       setIsConnected(false);
     });
 
     // Track real-time online/offline status
-    socket.on('user:online', ({ clerkId, online }: { clerkId: string; online: boolean }) => {
+    socketInstance.on('user:online', ({ clerkId, online }: { clerkId: string; online: boolean }) => {
       setOnlineUsers((prev) => {
         const next = new Set(prev);
         if (online) next.add(clerkId);
@@ -53,13 +53,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      socketInstance.disconnect();
+      setSocket(null);
     };
   }, [user, isLoaded]);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, isConnected, onlineUsers }}>
+    <SocketContext.Provider value={{ socket, isConnected, onlineUsers }}>
       {children}
     </SocketContext.Provider>
   );

@@ -123,23 +123,6 @@ httpServer.listen(PORT, () => {
     }
   }
 
-  // One-time startup database cleanup for test accounts
-  const prisma = require('./lib/prisma').default;
-  prisma.user.deleteMany({
-    where: {
-      OR: [
-        { username: { contains: 'test_username' } },
-        { email: { contains: 'test' } },
-        { username: { contains: 'testuser' } }
-      ]
-    }
-  }).then((deleted: { count: number }) => {
-    if (deleted.count > 0) {
-      console.log(`🧹 Startup DB Cleanup: Removed ${deleted.count} test users.`);
-    }
-  }).catch((err: any) => {
-    console.error("Failed to run startup database cleanup:", err);
-  });
 });
 
 export default app;

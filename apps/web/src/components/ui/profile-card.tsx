@@ -155,20 +155,8 @@ export function ProfileCard({
   const followSymbol = effectiveStatus === 'ACCEPTED' ? '✓' : effectiveStatus === 'PENDING' ? '…' : '+'
   const isActive = effectiveStatus !== 'NONE'
 
-  const CardWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (profileUrl) {
-      return (
-        <Link href={profileUrl} style={{ textDecoration: 'none', color: 'inherit' }} className="block w-full">
-          {children}
-        </Link>
-      )
-    }
-    return <div className="w-full">{children}</div>
-  }
-
-  return (
-    <CardWrapper>
-      <div className="bg-card rounded-[2rem] shadow-lg overflow-hidden border border-border/60 hover:shadow-xl hover:border-accent/40 transition-all duration-300 flex flex-col h-full">
+  const cardContent = (
+    <div className="bg-card rounded-[2rem] shadow-lg overflow-hidden border border-border/60 hover:shadow-xl hover:border-accent/40 transition-all duration-300 flex flex-col h-full">
         {/* Header with background */}
         <div className="relative h-32 bg-gradient-to-br from-indigo-900 to-slate-900 overflow-hidden flex-shrink-0">
           {backgroundUrl && (
@@ -292,7 +280,16 @@ export function ProfileCard({
             </a>
           </div>
         </div>
-      </div>
-    </CardWrapper>
+    </div>
   )
+
+  if (profileUrl) {
+    return (
+      <Link href={profileUrl} style={{ textDecoration: 'none', color: 'inherit' }} className="block w-full">
+        {cardContent}
+      </Link>
+    )
+  }
+
+  return <div className="w-full">{cardContent}</div>
 }

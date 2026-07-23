@@ -114,7 +114,7 @@ export default function DashboardPage() {
           Good morning, {user?.firstName || user?.username || "Developer"} 👋
         </h1>
         <p style={{ color: "var(--secondary)", fontSize: 14, marginTop: 4 }}>
-          Here's what's happening in your network today
+          Here&apos;s what&apos;s happening in your network today
         </p>
       </motion.div>
 

@@ -7,16 +7,14 @@ import { useEffect, useState } from "react";
 // Reads the returning-user name stored by the sign-up flow.
 // Returns null on first-ever visit (new users) or if the value was never set.
 function useReturningUser(): string | null {
-  const [name, setName] = useState<string | null>(null);
-
-  useEffect(() => {
+  const [name] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
     try {
-      const stored = localStorage.getItem("devverse_user_name");
-      if (stored) setName(stored);
+      return localStorage.getItem("devverse_user_name");
     } catch {
-      // localStorage unavailable in some environments
+      return null;
     }
-  }, []);
+  });
 
   return name;
 }
