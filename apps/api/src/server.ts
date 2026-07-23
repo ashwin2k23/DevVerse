@@ -10,6 +10,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { requireAuth } from './middleware/auth';
 import router from './routes';
 import { initializeSocket } from './services/socketService';
+import { runTursoMigrations } from './utils/tursoMigrate';
 
 dotenv.config();
 
@@ -103,43 +104,7 @@ httpServer.listen(PORT, () => {
   console.log(`📡 Socket.io ready`);
 
   // Run production Turso database schema migration
-  const tursoUrl = process.env.TURSO_DATABASE_URL;
-  const tursoToken = process.env.TURSO_AUTH_TOKEN;
-  if (tursoUrl && tursoToken) {
-    try {
-      const { createClient } = require('@libsql/client');
-      const client = createClient({ url: tursoUrl, authToken: tursoToken });
-      client.execute(`ALTER TABLE followers ADD COLUMN status TEXT NOT NULL DEFAULT 'PENDING'`)
-        .then(() => console.log('✅ Turso Migration: Successfully added status column to followers table.'))
-        .catch((err: any) => {
-          if (err.message.includes('duplicate column') || err.message.includes('already exists') || err.message.includes('duplicate')) {
-            console.log('ℹ️ Turso Migration: status column already exists, skipping.');
-          } else {
-            console.error('❌ Turso Migration failed:', err.message);
-          }
-        });
-    } catch (err: any) {
-      console.error('❌ Failed to run Turso migration:', err.message);
-    }
-  }
-
-  // One-time startup database cleanup for test accounts
-  const prisma = require('./lib/prisma').default;
-  prisma.user.deleteMany({
-    where: {
-      OR: [
-        { username: { contains: 'test_username' } },
-        { email: { contains: 'test' } },
-        { username: { contains: 'testuser' } }
-      ]
-    }
-  }).then((deleted: { count: number }) => {
-    if (deleted.count > 0) {
-      console.log(`🧹 Startup DB Cleanup: Removed ${deleted.count} test users.`);
-    }
-  }).catch((err: any) => {
-    console.error("Failed to run startup database cleanup:", err);
-  });
+  runTursoMigrations();
 });
 
 export default app;

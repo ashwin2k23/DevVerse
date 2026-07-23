@@ -13,10 +13,11 @@ function createPrisma(): PrismaClient {
   const tursoToken = process.env.TURSO_AUTH_TOKEN;
 
   if (tursoUrl && tursoToken) {
+    process.env.DATABASE_URL = tursoUrl.trim();
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaLibSQL } = require('@prisma/adapter-libsql');
     // Pass config object directly — adapter creates the @libsql/client internally
-    const adapter = new PrismaLibSQL({ url: tursoUrl, authToken: tursoToken });
+    const adapter = new PrismaLibSQL({ url: tursoUrl.trim(), authToken: tursoToken.trim() });
     return new PrismaClient({ adapter } as any);
   }
 
