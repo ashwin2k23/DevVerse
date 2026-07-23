@@ -10,6 +10,12 @@ const userSelect = {
   avatarUrl: true,
   coverUrl: true,
   bio: true,
+  headline: true,
+  location: true,
+  website: true,
+  resumeUrl: true,
+  skills: true,
+  completionPct: true,
   role: true,
   level: true,
   streak: true,
@@ -55,13 +61,6 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
       select: userSelect,
     });
 
-    // Create profile if not exists
-    await prisma.profile.upsert({
-      where: { userId: user.id },
-      create: { userId: user.id },
-      update: {},
-    });
-
     res.json({ success: true, data: user, isNew });
   } catch (error: any) {
     console.error('Failed to sync user:', error);
@@ -72,17 +71,11 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
 export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const username = req.params.username as string;
-    console.log('[DEBUG] getProfile called with username:', username);
 
     const user = await prisma.user.findUnique({
       where: { username },
       include: {
-        profile: true,
         socialLinks: true,
-        userSkills: { include: { skill: true } },
-        experience: { orderBy: { startDate: 'desc' } },
-        education: { orderBy: { startYear: 'desc' } },
-        achievements: { orderBy: { earnedAt: 'desc' } },
         projects: {
           orderBy: { createdAt: 'desc' },
           take: 6,
@@ -116,7 +109,6 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
       },
     });
 
-    console.log('[DEBUG] getProfile user query result:', user ? 'FOUND' : 'NOT FOUND');
     if (!user) throw createError('User not found', 404);
 
     const stats = await computeUserStats(user.id, user.level, user.streak);
@@ -124,7 +116,6 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
     user.streak = stats.streak;
     (user as any).totalExp = stats.totalExp;
 
-    // Check follow status between current user and this profile
     let isFollowing = false;
     let followStatus: 'NONE' | 'PENDING' | 'ACCEPTED' = 'NONE';
     let incomingFollowStatus: 'NONE' | 'PENDING' | 'ACCEPTED' = 'NONE';
@@ -139,7 +130,6 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
 
     res.json({ success: true, data: { ...user, isFollowing, followStatus, incomingFollowStatus } });
   } catch (error: any) {
-    console.error('[ERROR] getProfile caught exception:', error);
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 };
@@ -149,12 +139,7 @@ export const getCurrentUserProfile = async (req: AuthenticatedRequest, res: Resp
     const user = await prisma.user.findUnique({
       where: { clerkId: req.clerkId },
       include: {
-        profile: true,
         socialLinks: true,
-        userSkills: { include: { skill: true } },
-        experience: { orderBy: { startDate: 'desc' } },
-        education: { orderBy: { startYear: 'desc' } },
-        achievements: { orderBy: { earnedAt: 'desc' } },
         projects: {
           orderBy: { createdAt: 'desc' },
           take: 6,
@@ -190,51 +175,25 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
     const user = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
     if (!user) throw createError('User not found', 404);
 
-    // Update skills if provided
-    if (skills && Array.isArray(skills)) {
-      // 1. Delete existing user skills
-      await prisma.userSkill.deleteMany({
-        where: { userId: user.id },
-      });
-
-      // 2. Add new user skills
-      for (const skillName of skills) {
-        if (!skillName || !skillName.trim()) continue;
-        let skill = await prisma.skill.findUnique({
-          where: { name: skillName.trim() },
-        });
-
-        if (!skill) {
-          skill = await prisma.skill.create({
-            data: { name: skillName.trim(), category: 'General' },
-          });
-        }
-
-        await prisma.userSkill.create({
-          data: {
-            userId: user.id,
-            skillId: skill.id,
-            proficiency: 'INTERMEDIATE',
-          },
-        });
+    let skillsString: string | undefined = undefined;
+    if (skills !== undefined) {
+      if (Array.isArray(skills)) {
+        skillsString = skills.filter((s: any) => typeof s === 'string' && s.trim()).join(', ');
+      } else if (typeof skills === 'string') {
+        skillsString = skills.trim();
       }
     }
-    // Update social links if provided
-    if (socialLinks) {
-      // Normalize to array of {platform, url} regardless of incoming format
-      let linksArray: { platform: string; url: string }[] = [];
 
+    if (socialLinks) {
+      let linksArray: { platform: string; url: string }[] = [];
       if (Array.isArray(socialLinks)) {
-        // New format: [{platform: "Instagram", url: "https://..."}]
         linksArray = socialLinks.filter((l: any) => l?.platform && l?.url);
       } else if (typeof socialLinks === 'object') {
-        // Legacy format: {Instagram: "https://..."}
         linksArray = Object.entries(socialLinks)
           .filter(([, url]) => url)
           .map(([platform, url]) => ({ platform, url: url as string }));
       }
 
-      // Delete ALL existing social links, then recreate (clean slate)
       await prisma.socialLink.deleteMany({ where: { userId: user.id } });
 
       for (const link of linksArray) {
@@ -244,7 +203,7 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
         await prisma.socialLink.create({
           data: {
             userId: user.id,
-            platform: platformKey,       // normalized key for DB unique constraint
+            platform: platformKey,
             url: urlTrimmed,
           }
         });
@@ -258,14 +217,13 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
         ...(bio !== undefined && { bio }),
         ...(avatarUrl && { avatarUrl }),
         ...(coverUrl && { coverUrl }),
-        profile: {
-          upsert: {
-            create: { headline, location, website, resumeUrl },
-            update: { headline, location, website, resumeUrl },
-          },
-        },
+        ...(headline !== undefined && { headline }),
+        ...(location !== undefined && { location }),
+        ...(website !== undefined && { website }),
+        ...(resumeUrl !== undefined && { resumeUrl }),
+        ...(skillsString !== undefined && { skills: skillsString }),
       },
-      include: { profile: true, socialLinks: true, userSkills: { include: { skill: true } } },
+      include: { socialLinks: true },
     });
 
     res.json({ success: true, data: updatedUser });
@@ -276,10 +234,9 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
 
 export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { q, skills, country, page = 1, limit = 12 } = req.query;
+    const { q, page = 1, limit = 12 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    // Get current user to exclude self and compute follow statuses
     let currentUser: any = null;
     if (req.clerkId) {
       currentUser = await prisma.user.findUnique({ where: { clerkId: req.clerkId }, select: { id: true } });
@@ -288,7 +245,7 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
     const queryStr = q ? String(q) : undefined;
     const users = await prisma.user.findMany({
       where: {
-        ...(currentUser && { id: { not: currentUser.id } }), // exclude self
+        ...(currentUser && { id: { not: currentUser.id } }),
         ...(queryStr && {
           OR: [
             { username: { contains: queryStr } },
@@ -300,7 +257,6 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
       },
       select: {
         ...userSelect,
-        profile: true,
         socialLinks: { select: { platform: true, url: true } },
         ...(currentUser && {
           followers: { where: { followerId: currentUser.id }, select: { status: true } },
@@ -315,7 +271,6 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
       where: currentUser ? { id: { not: currentUser.id } } : {},
     });
 
-    // Attach followStatus per user
     const usersWithStatus = users.map((u: any) => {
       const followRecord = u.followers?.[0];
       const followStatus: 'NONE' | 'PENDING' | 'ACCEPTED' = followRecord?.status ?? 'NONE';
@@ -378,7 +333,6 @@ export const followUser = async (req: AuthenticatedRequest, res: Response) => {
     if (!currentUser) throw createError('User not found', 404);
     if (currentUser.id === userId) throw createError('Cannot follow yourself', 400);
 
-    // Check if relationship already exists
     const existing = await prisma.follower.findUnique({
       where: { followerId_followingId: { followerId: currentUser.id, followingId: userId } },
     });
@@ -386,12 +340,10 @@ export const followUser = async (req: AuthenticatedRequest, res: Response) => {
       return res.json({ success: true, message: 'Follow status unchanged', followStatus: existing.status });
     }
 
-    // Create follow request as PENDING
     await prisma.follower.create({
       data: { followerId: currentUser.id, followingId: userId, status: 'PENDING' },
     });
 
-    // Notify target user
     const notif = await prisma.notification.create({
       data: {
         userId,
@@ -436,7 +388,6 @@ export const unfollowUser = async (req: AuthenticatedRequest, res: Response) => 
       where: { followerId: currentUser.id, followingId: userId },
     });
 
-    // Clean up any follow request or follow notifications sent to the target user
     await prisma.notification.deleteMany({
       where: {
         userId: userId,
@@ -453,7 +404,7 @@ export const unfollowUser = async (req: AuthenticatedRequest, res: Response) => 
 
 export const acceptFollowRequest = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const requesterId = req.params.userId as string; // the person who sent the request
+    const requesterId = req.params.userId as string;
     const currentUser = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
     if (!currentUser) throw createError('User not found', 404);
 
@@ -468,7 +419,6 @@ export const acceptFollowRequest = async (req: AuthenticatedRequest, res: Respon
       data: { status: 'ACCEPTED' },
     });
 
-    // Notify requester that their request was accepted
     const notif = await prisma.notification.create({
       data: {
         userId: requesterId,
@@ -497,7 +447,6 @@ export const acceptFollowRequest = async (req: AuthenticatedRequest, res: Respon
       console.error('Failed to emit follow acceptance socket notification:', err);
     }
 
-    // Convert the FOLLOW_REQUEST notification into a read FOLLOW notification
     await prisma.notification.updateMany({
       where: { userId: currentUser.id, fromUserId: requesterId, type: 'FOLLOW_REQUEST' },
       data: {
@@ -523,7 +472,6 @@ export const declineFollowRequest = async (req: AuthenticatedRequest, res: Respo
       where: { followerId: requesterId, followingId: currentUser.id },
     });
 
-    // Delete the FOLLOW_REQUEST notification
     await prisma.notification.deleteMany({
       where: { userId: currentUser.id, fromUserId: requesterId, type: 'FOLLOW_REQUEST' },
     });
@@ -537,7 +485,7 @@ export const declineFollowRequest = async (req: AuthenticatedRequest, res: Respo
 export const getTrendingDevelopers = async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const users = await prisma.user.findMany({
-      select: { ...userSelect, profile: true },
+      select: userSelect,
       orderBy: { followers: { _count: 'desc' } },
       take: 10,
     });
@@ -563,7 +511,7 @@ export const getSuggestedDevelopers = async (req: AuthenticatedRequest, res: Res
       where: {
         id: { notIn: [...followingIds, currentUser.id] },
       },
-      select: { ...userSelect, profile: true },
+      select: userSelect,
       take: 5,
       orderBy: { followers: { _count: 'desc' } },
     });
@@ -609,11 +557,6 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response) => 
             user: { select: { id: true, username: true, avatarUrl: true } },
             _count: { select: { likes: true, comments: true } }
           }
-        },
-        event: {
-          include: {
-            community: { select: { id: true, name: true, slug: true } }
-          }
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -634,7 +577,6 @@ export const getUserContributions = async (req: AuthenticatedRequest, res: Respo
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-    // Fetch dates of all projects, posts, comments, likes created by the user in the last year
     const [projects, posts, comments, likes] = await Promise.all([
       prisma.project.findMany({
         where: { userId: user.id, createdAt: { gte: oneYearAgo } },
@@ -654,7 +596,6 @@ export const getUserContributions = async (req: AuthenticatedRequest, res: Respo
       }),
     ]);
 
-    // Combine all contribution dates
     const dates = [
       ...projects.map((p) => p.createdAt),
       ...posts.map((p) => p.createdAt),
@@ -667,4 +608,3 @@ export const getUserContributions = async (req: AuthenticatedRequest, res: Respo
     res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 };
-

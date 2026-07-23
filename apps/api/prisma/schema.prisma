@@ -15,56 +15,42 @@ datasource db {
 // ─── Models ─────────────────────────────────────────────────────────────────
 
 model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  username  String   @unique
-  email     String   @unique
-  avatarUrl String?
-  coverUrl  String?
-  bio       String?
-  role      String   @default("USER")
-  level     Int      @default(1)
-  streak    Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  profile           Profile?
-  projects          Project[]
-  posts             Post[]
-  comments          Comment[]
-  likes             Like[]
-  bookmarks         Bookmark[]
-  socialLinks       SocialLink[]
-  userSkills        UserSkill[]
-  experience        Experience[]
-  education         Education[]
-  achievements      Achievement[]
-  followers         Follower[]          @relation("following")
-  following         Follower[]          @relation("follower")
-  communities       CommunityMember[]
-  createdCommunities Community[]
-  eventRegistrations EventRegistration[]
-  sentMessages      Message[]
-  conversations     ConversationParticipant[]
-  notifications     Notification[]
-  notificationFrom  Notification[]      @relation("notificationFrom")
-
-  @@map("users")
-}
-
-model Profile {
-  id            String  @id @default(cuid())
-  userId        String  @unique
+  id            String   @id @default(cuid())
+  clerkId       String   @unique
+  username      String   @unique
+  email         String   @unique
+  avatarUrl     String?
+  coverUrl      String?
+  bio           String?
   headline      String?
   location      String?
   website       String?
   resumeUrl     String?
-  completionPct Int     @default(0)
+  skills        String   @default("") // Comma-separated in SQLite
+  completionPct Int      @default(0)
+  role          String   @default("USER")
+  level         Int      @default(1)
+  streak        Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relations
+  projects           Project[]
+  posts              Post[]
+  comments           Comment[]
+  likes              Like[]
+  bookmarks          Bookmark[]
+  socialLinks        SocialLink[]
+  followers          Follower[]          @relation("following")
+  following          Follower[]          @relation("follower")
+  communities        CommunityMember[]
+  createdCommunities Community[]
+  sentMessages       Message[]
+  conversations      ConversationParticipant[]
+  notifications      Notification[]
+  notificationFrom   Notification[]      @relation("notificationFrom")
 
-  @@map("profiles")
+  @@map("users")
 }
 
 model SocialLink {
@@ -76,70 +62,6 @@ model SocialLink {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("social_links")
-}
-
-model Experience {
-  id          String    @id @default(cuid())
-  userId      String
-  company     String
-  role        String
-  startDate   DateTime
-  endDate     DateTime?
-  isCurrent   Boolean   @default(false)
-  description String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("experience")
-}
-
-model Education {
-  id          String @id @default(cuid())
-  userId      String
-  institution String
-  degree      String
-  field       String
-  startYear   Int
-  endYear     Int?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("education")
-}
-
-model Skill {
-  id         String      @id @default(cuid())
-  name       String      @unique
-  category   String
-  userSkills UserSkill[]
-
-  @@map("skills")
-}
-
-model UserSkill {
-  id          String @id @default(cuid())
-  userId      String
-  skillId     String
-  proficiency String @default("BEGINNER")
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, skillId])
-  @@map("user_skills")
-}
-
-model Achievement {
-  id          String   @id @default(cuid())
-  userId      String
-  title       String
-  description String
-  icon        String
-  earnedAt    DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("achievements")
 }
 
 model Follower {
@@ -250,13 +172,11 @@ model Bookmark {
   targetType String
   postId     String?
   projectId  String?
-  eventId    String?
   createdAt  DateTime @default(now())
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   post    Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
   project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@map("bookmarks")
 }
@@ -275,7 +195,6 @@ model Community {
   creator  User              @relation(fields: [creatorId], references: [id])
   members  CommunityMember[]
   posts    Post[]
-  events   Event[]
 
   @@map("communities")
 }
@@ -292,39 +211,6 @@ model CommunityMember {
 
   @@unique([communityId, userId])
   @@map("community_members")
-}
-
-model Event {
-  id          String    @id @default(cuid())
-  title       String
-  description String
-  type        String
-  startAt     DateTime
-  endAt       DateTime
-  bannerUrl   String?
-  location    String?
-  isOnline    Boolean   @default(true)
-  communityId String?
-  createdAt   DateTime  @default(now())
-
-  community     Community?          @relation(fields: [communityId], references: [id])
-  registrations EventRegistration[]
-  bookmarks     Bookmark[]
-
-  @@map("events")
-}
-
-model EventRegistration {
-  id           String   @id @default(cuid())
-  eventId      String
-  userId       String
-  registeredAt DateTime @default(now())
-
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([eventId, userId])
-  @@map("event_registrations")
 }
 
 model Conversation {
@@ -382,3 +268,4 @@ model Notification {
 
   @@map("notifications")
 }
+

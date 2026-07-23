@@ -1,17 +1,40 @@
+"use client";
+
 import { SignIn } from "@clerk/nextjs";
-import { AuthShell } from "@/components/ui/gaming-login";
+import { AuthShell } from "@/components/ui/modern-login-signup";
+import { useEffect, useState } from "react";
+
+// Reads the returning-user name stored by the sign-up flow.
+// Returns null on first-ever visit (new users) or if the value was never set.
+function useReturningUser(): string | null {
+  const [name, setName] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("devverse_user_name");
+      if (stored) setName(stored);
+    } catch {
+      // localStorage unavailable in some environments
+    }
+  }, []);
+
+  return name;
+}
 
 export default function SignInPage() {
+  const returningUserName = useReturningUser();
+
   return (
-    <AuthShell mode="login" videoUrl="/auth-bg.mp4">
+    <AuthShell mode="login" returningUserName={returningUserName}>
       <SignIn
         appearance={{
-        elements: {
+          elements: {
             rootBox: {
               width: "100%",
+              margin: "0 auto",
             },
             card: {
-              background: "rgba(0,0,0,0)",
+              background: "transparent",
               border: "none",
               boxShadow: "none",
               backdropFilter: "none",

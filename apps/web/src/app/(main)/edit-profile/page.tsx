@@ -118,8 +118,8 @@ export default function EditProfilePage() {
             const resolvedLocation = cityName
               ? `${cityName}, ${state || country}`
               : state
-              ? `${state}, ${country}`
-              : country;
+                ? `${state}, ${country}`
+                : country;
             if (resolvedLocation) setLocation(resolvedLocation);
             else alert("Could not resolve a readable location name.");
           } else {
@@ -171,11 +171,11 @@ export default function EditProfilePage() {
     setError(null);
     try {
       const socialLinks: { platform: string; url: string }[] = [];
-      if (instagram.trim())    socialLinks.push({ platform: "Instagram",  url: instagram.trim() });
-      if (twitterLink.trim())  socialLinks.push({ platform: "Twitter",    url: twitterLink.trim() });
-      if (threads.trim())      socialLinks.push({ platform: "Threads",    url: threads.trim() });
-      if (githubLink.trim())   socialLinks.push({ platform: "GitHub",     url: githubLink.trim() });
-      if (linkedinLink.trim()) socialLinks.push({ platform: "LinkedIn",   url: linkedinLink.trim() });
+      if (instagram.trim()) socialLinks.push({ platform: "Instagram", url: instagram.trim() });
+      if (twitterLink.trim()) socialLinks.push({ platform: "Twitter", url: twitterLink.trim() });
+      if (threads.trim()) socialLinks.push({ platform: "Threads", url: threads.trim() });
+      if (githubLink.trim()) socialLinks.push({ platform: "GitHub", url: githubLink.trim() });
+      if (linkedinLink.trim()) socialLinks.push({ platform: "LinkedIn", url: linkedinLink.trim() });
 
       const res = await authApi.put("/users/me", {
         username: usernameState.trim(),
@@ -252,8 +252,8 @@ export default function EditProfilePage() {
                 {avatarUrl
                   ? <img src={avatarUrl} alt="avatar preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <span style={{ fontSize: 22, fontWeight: 800, color: "white" }}>
-                      {usernameState.slice(0, 2).toUpperCase() || "?"}
-                    </span>
+                    {usernameState.slice(0, 2).toUpperCase() || "?"}
+                  </span>
                 }
               </div>
               <button
@@ -444,11 +444,11 @@ export default function EditProfilePage() {
             {skills.length === 0
               ? <span style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>No skills added yet.</span>
               : skills.map((skill) => (
-                  <span key={skill} style={{ fontSize: 12, fontWeight: 500, padding: "4px 10px", background: "var(--accent-muted)", color: "var(--accent)", borderRadius: "var(--radius-full)", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    {skill}
-                    <X size={12} style={{ cursor: "pointer" }} onClick={() => handleRemoveSkill(skill)} />
-                  </span>
-                ))
+                <span key={skill} style={{ fontSize: 12, fontWeight: 500, padding: "4px 10px", background: "var(--accent-muted)", color: "var(--accent)", borderRadius: "var(--radius-full)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  {skill}
+                  <X size={12} style={{ cursor: "pointer" }} onClick={() => handleRemoveSkill(skill)} />
+                </span>
+              ))
             }
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -483,10 +483,10 @@ export default function EditProfilePage() {
 
           {[
             { id: "edit-instagram", label: "Instagram", placeholder: "https://instagram.com/yourhandle", value: instagram, onChange: setInstagram },
-            { id: "edit-twitter",   label: "Twitter / X", placeholder: "https://x.com/yourhandle", value: twitterLink, onChange: setTwitterLink },
-            { id: "edit-threads",   label: "Threads",   placeholder: "https://threads.net/@yourhandle", value: threads,     onChange: setThreads },
-            { id: "edit-github",    label: "GitHub",    placeholder: "https://github.com/yourusername", value: githubLink,  onChange: setGithubLink },
-            { id: "edit-linkedin",  label: "LinkedIn",  placeholder: "https://linkedin.com/in/yourprofile", value: linkedinLink, onChange: setLinkedinLink },
+            { id: "edit-twitter", label: "Twitter / X", placeholder: "https://x.com/yourhandle", value: twitterLink, onChange: setTwitterLink },
+            { id: "edit-threads", label: "Threads", placeholder: "https://threads.net/@yourhandle", value: threads, onChange: setThreads },
+            { id: "edit-github", label: "GitHub", placeholder: "https://github.com/yourusername", value: githubLink, onChange: setGithubLink },
+            { id: "edit-linkedin", label: "LinkedIn", placeholder: "https://linkedin.com/in/yourprofile", value: linkedinLink, onChange: setLinkedinLink },
           ].map(({ id, label, placeholder, value, onChange }) => (
             <div key={id}>
               <label style={{ fontSize: 12, fontWeight: 500, display: "block", marginBottom: 6 }}>{label}</label>

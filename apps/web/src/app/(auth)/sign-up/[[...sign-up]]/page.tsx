@@ -1,17 +1,20 @@
+"use client";
+
 import { SignUp } from "@clerk/nextjs";
-import { AuthShell } from "@/components/ui/gaming-login";
+import { AuthShell } from "@/components/ui/modern-login-signup";
 
 export default function SignUpPage() {
   return (
-    <AuthShell mode="signup" videoUrl="/auth-bg.mp4">
+    <AuthShell mode="signup">
       <SignUp
         appearance={{
-        elements: {
+          elements: {
             rootBox: {
               width: "100%",
+              margin: "0 auto",
             },
             card: {
-              background: "rgba(0,0,0,0)",
+              background: "transparent",
               border: "none",
               boxShadow: "none",
               backdropFilter: "none",

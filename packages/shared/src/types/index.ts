@@ -7,12 +7,18 @@ export interface User {
   avatarUrl?: string;
   coverUrl?: string;
   bio?: string;
+  headline?: string;
+  location?: string;
+  website?: string;
+  resumeUrl?: string;
+  skills?: string[];
+  completionPct?: number;
   role: UserRole;
   level: number;
   streak: number;
   createdAt: Date;
   updatedAt: Date;
-  profile?: Profile;
+  socialLinks?: SocialLink[];
   _count?: {
     followers: number;
     following: number;
@@ -23,62 +29,12 @@ export interface User {
 
 export type UserRole = 'USER' | 'MODERATOR' | 'ADMIN';
 
-export interface Profile {
-  id: string;
-  userId: string;
-  headline?: string;
-  location?: string;
-  website?: string;
-  resumeUrl?: string;
-  completionPct: number;
-  socialLinks?: SocialLink[];
-  skills?: UserSkill[];
-  experience?: Experience[];
-  education?: Education[];
-}
-
 export interface SocialLink {
   id: string;
   userId: string;
   platform: string;
   url: string;
 }
-
-export interface Experience {
-  id: string;
-  userId: string;
-  company: string;
-  role: string;
-  startDate: Date;
-  endDate?: Date;
-  isCurrent: boolean;
-  description?: string;
-}
-
-export interface Education {
-  id: string;
-  userId: string;
-  institution: string;
-  degree: string;
-  field: string;
-  startYear: number;
-  endYear?: number;
-}
-
-export interface Skill {
-  id: string;
-  name: string;
-  category: string;
-}
-
-export interface UserSkill {
-  id: string;
-  userId: string;
-  skill: Skill;
-  proficiency: ProficiencyLevel;
-}
-
-export type ProficiencyLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
 
 // Project types
 export interface Project {
@@ -156,26 +112,6 @@ export interface Community {
 
 export type CommunityRole = 'MEMBER' | 'MODERATOR' | 'ADMIN';
 
-// Event types
-export interface Event {
-  id: string;
-  title: string;
-  description: string;
-  type: EventType;
-  startAt: Date;
-  endAt: Date;
-  bannerUrl?: string;
-  location?: string;
-  isOnline: boolean;
-  communityId?: string;
-  _count?: { registrations: number };
-  isRegistered?: boolean;
-  isBookmarked?: boolean;
-  createdAt: Date;
-}
-
-export type EventType = 'HACKATHON' | 'MEETUP' | 'WORKSHOP' | 'WEBINAR';
-
 // Message types
 export interface Message {
   id: string;
@@ -219,9 +155,7 @@ export type NotificationType =
   | 'COMMENT'
   | 'FOLLOW'
   | 'PROJECT_APPRECIATION'
-  | 'COMMUNITY_INVITE'
-  | 'EVENT_REMINDER'
-  | 'ACHIEVEMENT';
+  | 'COMMUNITY_INVITE';
 
 // API types
 export interface ApiResponse<T> {
@@ -243,3 +177,4 @@ export interface ApiError {
   statusCode: number;
   errors?: Record<string, string[]>;
 }
+

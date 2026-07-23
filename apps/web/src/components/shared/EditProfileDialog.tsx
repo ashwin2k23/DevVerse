@@ -184,8 +184,8 @@ export function EditProfileDialog({ profile, trigger, onSuccess }: EditProfileDi
             const resolvedLocation = cityName
               ? `${cityName}, ${state || country}`
               : state
-              ? `${state}, ${country}`
-              : country;
+                ? `${state}, ${country}`
+                : country;
             if (resolvedLocation) setLocation(resolvedLocation);
             else alert("Could not resolve location.");
           } else {
@@ -217,11 +217,11 @@ export function EditProfileDialog({ profile, trigger, onSuccess }: EditProfileDi
     setError(null);
     try {
       const socialLinks: { platform: string; url: string }[] = [];
-      if (instagram.trim())    socialLinks.push({ platform: "Instagram",  url: instagram.trim() });
-      if (twitterLink.trim())  socialLinks.push({ platform: "Twitter",    url: twitterLink.trim() });
-      if (threads.trim())      socialLinks.push({ platform: "Threads",    url: threads.trim() });
-      if (githubLink.trim())   socialLinks.push({ platform: "GitHub",     url: githubLink.trim() });
-      if (linkedinLink.trim()) socialLinks.push({ platform: "LinkedIn",   url: linkedinLink.trim() });
+      if (instagram.trim()) socialLinks.push({ platform: "Instagram", url: instagram.trim() });
+      if (twitterLink.trim()) socialLinks.push({ platform: "Twitter", url: twitterLink.trim() });
+      if (threads.trim()) socialLinks.push({ platform: "Threads", url: threads.trim() });
+      if (githubLink.trim()) socialLinks.push({ platform: "GitHub", url: githubLink.trim() });
+      if (linkedinLink.trim()) socialLinks.push({ platform: "LinkedIn", url: linkedinLink.trim() });
 
       const res = await authApi.put("/users/me", {
         username: usernameState.trim(),
@@ -262,7 +262,7 @@ export function EditProfileDialog({ profile, trigger, onSuccess }: EditProfileDi
         <DialogDescription className="sr-only">
           Make changes to your profile here. Upload cover and avatar, change username, location, biography, website, skills, and social links.
         </DialogDescription>
-        
+
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-10rem)]">
           {/* Cover & Avatar Header */}
           <div className="relative h-36 bg-gradient-to-br from-indigo-900 to-slate-900 overflow-hidden flex-shrink-0">
