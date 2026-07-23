@@ -37,6 +37,18 @@ export default function UserSync() {
         synced.current = true;
         console.debug('[UserSync] ✅ synced as:', username);
 
+        // Persist display name for the "Welcome back" greeting on the sign-in page.
+        const displayName =
+          user.firstName ||
+          user.username ||
+          user.emailAddresses[0]?.emailAddress?.split('@')[0] ||
+          'Developer';
+        try {
+          localStorage.setItem('devverse_user_name', displayName);
+        } catch {
+          // ignore — storage might be disabled
+        }
+
         if (res.data?.isNew) {
           console.debug('[UserSync] New user detected, redirecting to profile setup...');
           router.push('/edit-profile');

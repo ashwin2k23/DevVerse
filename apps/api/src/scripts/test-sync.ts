@@ -6,6 +6,11 @@ const userSelect = {
   avatarUrl: true,
   coverUrl: true,
   bio: true,
+  headline: true,
+  location: true,
+  website: true,
+  resumeUrl: true,
+  skills: true,
   role: true,
   level: true,
   streak: true,
@@ -35,16 +40,7 @@ async function main() {
       select: userSelect,
     });
 
-    console.log('User created:', user);
-
-    // Create profile if not exists
-    const profile = await prisma.profile.upsert({
-      where: { userId: user.id },
-      create: { userId: user.id },
-      update: {},
-    });
-
-    console.log('Profile created:', profile);
+    console.log('User synced:', user);
   } catch (error) {
     console.error('Error during syncUser simulation:', error);
   }

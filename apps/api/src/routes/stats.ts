@@ -6,14 +6,13 @@ const router: Router = Router();
 // GET /api/stats — public, no auth required
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const [developers, projects, communities, events] = await Promise.all([
+    const [developers, projects, communities] = await Promise.all([
       prisma.user.count(),
       prisma.project.count(),
       prisma.community.count(),
-      prisma.event.count(),
     ]);
 
-    res.json({ developers, projects, communities, events });
+    res.json({ developers, projects, communities });
   } catch (err) {
     console.error('Stats error:', err);
     res.status(500).json({ error: 'Failed to fetch stats' });

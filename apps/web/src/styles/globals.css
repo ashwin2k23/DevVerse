@@ -404,3 +404,13 @@ code {
   border-radius: 10px !important;
 }
 .cl-socialButtonsBlockButtonText { color: white !important; }
+
+/* Ensure Clerk's root container is always centered */
+.cl-rootBox {
+  margin: 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
