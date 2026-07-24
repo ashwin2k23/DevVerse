@@ -43,7 +43,21 @@ async function getFollowStatus(fromId: string | undefined, toId: string): Promis
 
 export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { clerkId, username, email, avatarUrl } = req.body;
+    const clerkId = req.clerkId || req.body.clerkId;
+    if (!clerkId) {
+      return res.status(400).json({ success: false, message: 'Missing clerkId' });
+    }
+
+    let { username, email, avatarUrl } = req.body;
+
+    if (!username) {
+      username = `user_${clerkId.slice(-8)}`;
+    }
+    if (!email) {
+      email = `${clerkId}@user.devverse.app`;
+    }
+
+    const sanitizedUsername = String(username).replace(/[^a-zA-Z0-9_]/g, '_');
 
     const existingUser = await prisma.user.findUnique({
       where: { clerkId },
@@ -52,19 +66,48 @@ export const syncUser = async (req: AuthenticatedRequest, res: Response) => {
 
     const isNew = !existingUser;
 
-    const user = await prisma.user.upsert({
-      where: { clerkId },
-      create: { clerkId, username, email, avatarUrl },
-      update: {
-        avatarUrl: existingUser?.avatarUrl ? existingUser.avatarUrl : avatarUrl,
-      },
-      select: userSelect,
-    });
+    let user;
+    try {
+      user = await prisma.user.upsert({
+        where: { clerkId },
+        create: {
+          clerkId,
+          username: sanitizedUsername,
+          email,
+          avatarUrl: avatarUrl || null,
+        },
+        update: {
+          ...(avatarUrl ? { avatarUrl } : {}),
+        },
+        select: userSelect,
+      });
+    } catch (upsertErr: any) {
+      // If unique constraint failed on username or email (P2002), fallback to unique username/email
+      if (upsertErr.code === 'P2002') {
+        const fallbackUsername = `${sanitizedUsername}_${Date.now().toString().slice(-4)}`;
+        const fallbackEmail = `${clerkId}_${Date.now()}@user.devverse.app`;
+        user = await prisma.user.upsert({
+          where: { clerkId },
+          create: {
+            clerkId,
+            username: fallbackUsername,
+            email: fallbackEmail,
+            avatarUrl: avatarUrl || null,
+          },
+          update: {
+            ...(avatarUrl ? { avatarUrl } : {}),
+          },
+          select: userSelect,
+        });
+      } else {
+        throw upsertErr;
+      }
+    }
 
     res.json({ success: true, data: user, isNew });
   } catch (error: any) {
     console.error('Failed to sync user:', error);
-    res.status(500).json({ success: false, message: 'Failed to sync user' });
+    res.status(500).json({ success: false, message: error.message || 'Failed to sync user' });
   }
 };
 
@@ -498,8 +541,11 @@ export const getTrendingDevelopers = async (_req: AuthenticatedRequest, res: Res
 
 export const getSuggestedDevelopers = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    if (!req.clerkId) {
+      return res.json({ success: true, data: [] });
+    }
     const currentUser = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
-    if (!currentUser) throw createError('User not found', 404);
+    if (!currentUser) return res.json({ success: true, data: [] });
 
     const following = await prisma.follower.findMany({
       where: { followerId: currentUser.id },

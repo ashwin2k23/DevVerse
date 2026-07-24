@@ -6,8 +6,11 @@ import { prisma } from '../lib/prisma';
 
 export const getNotifications = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    if (!req.clerkId) {
+      return res.json({ success: true, data: [] });
+    }
     const user = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
-    if (!user) throw createError('User not found', 404);
+    if (!user) return res.json({ success: true, data: [] });
 
     const notifications = await prisma.notification.findMany({
       where: { userId: user.id },
@@ -31,8 +34,11 @@ export const getNotifications = async (req: AuthenticatedRequest, res: Response)
 
 export const getUnreadCount = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    if (!req.clerkId) {
+      return res.json({ success: true, data: { count: 0 } });
+    }
     const user = await prisma.user.findUnique({ where: { clerkId: req.clerkId } });
-    if (!user) throw createError('User not found', 404);
+    if (!user) return res.json({ success: true, data: { count: 0 } });
 
     const count = await prisma.notification.count({
       where: {
